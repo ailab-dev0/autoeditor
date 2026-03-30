@@ -1,23 +1,17 @@
 import { h, render } from 'preact';
 import { createEventBus } from '../../shared/event-bus';
 import { createTransport } from '../../shared/transport';
+import { setupTranscriptAdapter } from '../../domains/transcript/adapter';
+import { TranscriptView } from '../../domains/transcript/components/TranscriptView';
 
 let bus = null;
 let transport = null;
 
-function TranscriptView() {
-  return (
-    <div class="flex-col gap-md p-md">
-      <h2>Transcript Panel</h2>
-      <p class="text-muted">Transcript view — coming soon</p>
-    </div>
-  );
-}
-
 export function show() {
   bus = createEventBus();
   transport = createTransport(bus);
-  render(<TranscriptView />, document.getElementById('root'));
+  setupTranscriptAdapter(bus, transport);
+  render(<TranscriptView bus={bus} />, document.getElementById('root'));
 }
 
 export function hide() {

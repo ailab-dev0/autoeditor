@@ -1,23 +1,17 @@
 import { h, render } from 'preact';
 import { createEventBus } from '../../shared/event-bus';
 import { createTransport } from '../../shared/transport';
+import { setupStockAdapter } from '../../domains/stock/adapter';
+import { StockBrowser } from '../../domains/stock/components/StockBrowser';
 
 let bus = null;
 let transport = null;
 
-function StockBrowser() {
-  return (
-    <div class="flex-col gap-md p-md">
-      <h2>Stock Panel</h2>
-      <p class="text-muted">Stock footage search — coming soon</p>
-    </div>
-  );
-}
-
 export function show() {
   bus = createEventBus();
   transport = createTransport(bus);
-  render(<StockBrowser />, document.getElementById('root'));
+  setupStockAdapter(bus, transport);
+  render(<StockBrowser bus={bus} />, document.getElementById('root'));
 }
 
 export function hide() {

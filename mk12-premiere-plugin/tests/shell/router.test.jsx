@@ -29,7 +29,7 @@ describe('Router', () => {
   it('renders ProjectSelector for READY', () => {
     shellState.value = STATES.READY;
     const { container } = render(<Router bus={bus} />);
-    expect(container.textContent).toContain('Select Project');
+    expect(container.textContent).toContain('project');
   });
 
   it('renders ProgressPanel for WORKING', () => {
@@ -38,15 +38,19 @@ describe('Router', () => {
     expect(container.querySelector('[role="progressbar"]')).toBeTruthy();
   });
 
-  it('renders SegmentList for REVIEWING', () => {
+  it('renders tabbed review view for REVIEWING', () => {
     shellState.value = STATES.REVIEWING;
     const { container } = render(<Router bus={bus} />);
-    expect(container.textContent).toContain('Review Segments');
+    expect(container.textContent).toContain('Segments');
+    expect(container.textContent).toContain('Stock');
+    expect(container.textContent).toContain('Transcript');
+    expect(container.textContent).toContain('Knowledge');
+    expect(container.textContent).toContain('Export');
   });
 
   it('renders ApplySummary for APPLYING', () => {
     shellState.value = STATES.APPLYING;
     const { container } = render(<Router bus={bus} />);
-    expect(container.textContent).toContain('Applying Edits');
+    expect(container.textContent).toContain('Apply');
   });
 });
