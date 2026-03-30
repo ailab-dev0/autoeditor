@@ -101,14 +101,14 @@ function createTransport(bus) {
     try {
       let res = await fetch(url, opts);
 
-      // 401 — try refresh once
+      // 401 — emit transport-level event, let auth adapter handle (#13)
       if (res.status === 401) {
-        bus.emit('auth:refresh');
+        bus.emit('transport:auth-failed', { path, retryable: true });
         await new Promise(r => setTimeout(r, 500));
         opts.headers = authHeaders();
         res = await fetch(url, opts);
         if (res.status === 401) {
-          bus.emit('auth:expired');
+          bus.emit('transport:auth-failed', { path, retryable: false });
           return { ok: false, error: 'Authentication expired' };
         }
       }

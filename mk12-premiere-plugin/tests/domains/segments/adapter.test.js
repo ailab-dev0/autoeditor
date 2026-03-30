@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { segments, approvals, segmentsError } from '../../../src/domains/segments/signals';
+import { segments, approvals, selectedSegmentId, segmentsError } from '../../../src/domains/segments/signals';
 import { setupSegmentsAdapter } from '../../../src/domains/segments/adapter';
 import { createEventBus } from '../../../src/shared/event-bus';
 
@@ -20,12 +20,13 @@ function makePackage() {
   };
 }
 
-function makeTransport() {
+function makeTransport(overrides = {}) {
   return {
     get: vi.fn().mockResolvedValue({ ok: true, data: [] }),
     post: vi.fn().mockResolvedValue({ ok: true, data: {} }),
     patch: vi.fn().mockResolvedValue({ ok: true, data: {} }),
     broadcastSync: vi.fn(),
+    ...overrides,
   };
 }
 
@@ -37,6 +38,7 @@ describe('Segments Adapter', () => {
     transport = makeTransport();
     segments.value = [];
     approvals.value = {};
+    selectedSegmentId.value = null;
     segmentsError.value = null;
     setupSegmentsAdapter(bus, transport);
   });
@@ -89,7 +91,6 @@ describe('Segments Adapter', () => {
     bus.emit('pipeline:complete', { editPackage: makePackage() });
     bus.emit('segments:approve', { segmentId: 'a', projectId: 'proj-1' });
 
-    // Allow async to resolve
     await new Promise(r => setTimeout(r, 10));
 
     expect(transport.patch).toHaveBeenCalledWith(
@@ -98,8 +99,52 @@ describe('Segments Adapter', () => {
     );
   });
 
-  it('segments:fetch calls transport.get and hydrates segments', async () => {
-    const mockData = [{ id: 'x', start: 0, end: 5, suggestion: 'keep', confidence: 0.9 }];
+  it('segments:approve reverts on PATCH failure (#9)', async () => {
+    const failTransport = makeTransport({
+      patch: vi.fn().mockResolvedValue({ ok: false, error: 'Server error' }),
+    });
+    bus = createEventBus();
+    segments.value = [];
+    approvals.value = {};
+    setupSegmentsAdapter(bus, failTransport);
+
+    bus.emit('pipeline:complete', { editPackage: makePackage() });
+    expect(approvals.value.a).toBe('pending');
+
+    bus.emit('segments:approve', { segmentId: 'a', projectId: 'proj-1' });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    // Should revert to previous state
+    expect(approvals.value.a).toBe('pending');
+  });
+
+  it('segments:approve ignores concurrent calls for same segment (#10)', async () => {
+    const slowTransport = makeTransport({
+      patch: vi.fn(() => new Promise(r => setTimeout(() => r({ ok: true, data: {} }), 100))),
+    });
+    bus = createEventBus();
+    segments.value = [];
+    approvals.value = {};
+    setupSegmentsAdapter(bus, slowTransport);
+
+    bus.emit('pipeline:complete', { editPackage: makePackage() });
+
+    // Fire two approvals for same segment rapidly
+    bus.emit('segments:approve', { segmentId: 'a', projectId: 'proj-1' });
+    bus.emit('segments:approve', { segmentId: 'a', projectId: 'proj-1' });
+
+    await new Promise(r => setTimeout(r, 200));
+
+    // Should only have called PATCH once
+    expect(slowTransport.patch).toHaveBeenCalledTimes(1);
+  });
+
+  it('segments:fetch calls transport.get and inits approvals to pending (#2)', async () => {
+    const mockData = [
+      { id: 'x', start: 0, end: 5, suggestion: 'keep', confidence: 0.9 },
+      { id: 'y', start: 5, end: 10, suggestion: 'cut', confidence: 0.8 },
+    ];
     transport.get.mockResolvedValue({ ok: true, data: mockData });
 
     bus.emit('segments:fetch', { projectId: 'proj-2' });
@@ -107,5 +152,17 @@ describe('Segments Adapter', () => {
 
     expect(transport.get).toHaveBeenCalledWith('/api/projects/proj-2/marks');
     expect(segments.value).toEqual(mockData);
+    expect(approvals.value).toEqual({ x: 'pending', y: 'pending' });
+  });
+
+  it('segments:select sets selectedSegmentId (#14)', () => {
+    bus.emit('segments:select', { segmentId: 'seg-1' });
+    expect(selectedSegmentId.value).toBe('seg-1');
+  });
+
+  it('segments:select clears with null', () => {
+    selectedSegmentId.value = 'seg-1';
+    bus.emit('segments:select', { segmentId: null });
+    expect(selectedSegmentId.value).toBeNull();
   });
 });

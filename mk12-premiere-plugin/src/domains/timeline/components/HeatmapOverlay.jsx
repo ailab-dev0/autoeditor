@@ -1,9 +1,9 @@
 /**
  * HeatmapOverlay — visual strip showing segment decisions as colored blocks.
+ * Read-only imports from segments domain. Selection via bus intent (#7, #14).
  */
 import { h } from 'preact';
 import { segments, approvals, selectedSegmentId } from '../../segments/signals.js';
-import { MARKER_COLORS } from '../../segments/protocol.js';
 
 const COLOR_MAP = {
   keep: 'var(--spectrum-global-color-green-500, #2d9d78)',
@@ -12,7 +12,7 @@ const COLOR_MAP = {
   trim_end: 'var(--spectrum-global-color-purple-500, #9256d9)',
   trim_both: 'var(--spectrum-global-color-purple-500, #9256d9)',
   review: 'var(--spectrum-global-color-orange-500, #e68619)',
-  speed: 'var(--spectrum-global-color-blue-500, #2680eb)',
+  speed_up: 'var(--spectrum-global-color-blue-500, #2680eb)',
   pending: 'var(--spectrum-global-color-gray-400, #999)',
 };
 
@@ -29,14 +29,16 @@ export function HeatmapOverlay({ bus }) {
 
   if (segs.length === 0) return null;
 
-  // Calculate total duration for proportional widths
-  const totalDuration = segs.reduce((sum, s) => sum + ((s.outPoint || 0) - (s.inPoint || 0)), 0);
+  const totalDuration = segs.reduce((sum, s) => {
+    const dur = (s.end || s.outPoint || 0) - (s.start || s.inPoint || 0);
+    return sum + dur;
+  }, 0);
   if (totalDuration <= 0) return null;
 
   return (
     <div class="heatmap-overlay flex-row" role="img" aria-label="Segment heatmap">
       {segs.map(seg => {
-        const duration = (seg.outPoint || 0) - (seg.inPoint || 0);
+        const duration = (seg.end || seg.outPoint || 0) - (seg.start || seg.inPoint || 0);
         const widthPercent = (duration / totalDuration) * 100;
         const isSelected = seg.id === selectedId;
 
@@ -47,8 +49,8 @@ export function HeatmapOverlay({ bus }) {
             style={`width: ${widthPercent}%; background: ${getSegmentColor(seg, apps)};`}
             title={`${seg.suggestion} — ${seg.label || seg.id}`}
             onClick={() => {
-              selectedSegmentId.value = seg.id;
-              if (bus) bus.emit('segments:fetch', { segmentId: seg.id });
+              // Emit intent — segments adapter handles the write (#14)
+              if (bus) bus.emit('segments:select', { segmentId: seg.id });
             }}
           />
         );

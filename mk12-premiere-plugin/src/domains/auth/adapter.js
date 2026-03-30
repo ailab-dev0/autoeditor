@@ -42,4 +42,16 @@ export function setupAuthAdapter(bus, transport) {
     try { localStorage.removeItem('editorlens:token'); } catch {}
     bus.emit('auth:logged-out', {});
   });
+
+  // Transport-level auth failure → domain-level handling (#13)
+  bus.on('transport:auth-failed', ({ retryable }) => {
+    if (retryable) {
+      bus.emit('auth:refresh', {});
+    } else {
+      token.value = null;
+      user.value = null;
+      try { localStorage.removeItem('editorlens:token'); } catch {}
+      bus.emit('auth:expired', {});
+    }
+  });
 }

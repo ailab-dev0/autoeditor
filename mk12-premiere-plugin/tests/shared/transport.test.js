@@ -78,11 +78,9 @@ describe('Transport', () => {
   });
 
   describe('401 refresh flow', () => {
-    it('emits auth:refresh on 401, retries, then auth:expired on second 401', async () => {
-      const refreshHandler = vi.fn();
-      const expiredHandler = vi.fn();
-      bus.on('auth:refresh', refreshHandler);
-      bus.on('auth:expired', expiredHandler);
+    it('emits transport:auth-failed on 401, retries, then non-retryable on second 401', async () => {
+      const authFailedCalls = [];
+      bus.on('transport:auth-failed', (data) => authFailedCalls.push(data));
 
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
         ok: false,
@@ -92,8 +90,9 @@ describe('Transport', () => {
 
       const result = await transport.get('/api/projects');
 
-      expect(refreshHandler).toHaveBeenCalledTimes(1);
-      expect(expiredHandler).toHaveBeenCalledTimes(1);
+      expect(authFailedCalls).toHaveLength(2);
+      expect(authFailedCalls[0].retryable).toBe(true);
+      expect(authFailedCalls[1].retryable).toBe(false);
       expect(result.ok).toBe(false);
       expect(result.error).toBe('Authentication expired');
     });

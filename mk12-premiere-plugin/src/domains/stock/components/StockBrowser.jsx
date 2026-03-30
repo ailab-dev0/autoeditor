@@ -55,7 +55,7 @@ export function StockBrowser({ bus }) {
             key={item.id}
             class="stock-card bordered p-sm"
             style="cursor:pointer;border-radius:4px;overflow:hidden"
-            onClick={() => bus.emit('stock:results', { selected: item })}
+            onClick={() => bus.emit('stock:selected', { item })}
           >
             {item.thumbnail && (
               <img

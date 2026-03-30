@@ -27,6 +27,7 @@ const VALID_EVENTS = Object.freeze([
   'segments:fetch', 'segments:fetched',
   'segments:approve', 'segments:approved',
   'segments:reject', 'segments:rejected',
+  'segments:select',
   'segments:error',
 
   // timeline
@@ -37,6 +38,7 @@ const VALID_EVENTS = Object.freeze([
 
   // stock
   'stock:search', 'stock:results',
+  'stock:selected',
   'stock:error',
 
   // transcript
@@ -50,6 +52,9 @@ const VALID_EVENTS = Object.freeze([
   // knowledge
   'knowledge:fetch', 'knowledge:fetched',
   'knowledge:error',
+
+  // transport
+  'transport:auth-failed',
 
   // websocket raw
   'ws:analysis:progress', 'ws:analysis:complete',
