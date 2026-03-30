@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   validateEditPackage, parseSegments,
   VALID_SUGGESTIONS, VALID_ASSET_TYPES, VALID_TRANSITIONS, MARKER_COLORS,
+  toTimelineOperations as protocolReExport,
+  toMarkerData as protocolReExportMarkers,
 } from '../../../src/domains/segments/protocol';
 import { toMarkerData, toTimelineOperations } from '../../../src/domains/segments/operations';
 
@@ -260,5 +262,30 @@ describe('toTimelineOperations', () => {
     const ops = toTimelineOperations(handleSegs, { h1: 'approved' });
     expect(ops[0].inPoint).toBe(4);
     expect(ops[0].outPoint).toBe(17);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Verify protocol.js re-exports the CORRECT toTimelineOperations
+// ---------------------------------------------------------------------------
+describe('protocol.js re-exports', () => {
+  it('re-exports same toTimelineOperations as operations.js', () => {
+    expect(protocolReExport).toBe(toTimelineOperations);
+  });
+
+  it('re-exports same toMarkerData as operations.js', () => {
+    expect(protocolReExportMarkers).toBe(toMarkerData);
+  });
+
+  it('re-exported toTimelineOperations: approved review segment generates ZERO ops', () => {
+    const segs = parseSegments({
+      version: 'v3', project_name: 'T', pipeline_session_id: 's', pedagogy_score: 0.5,
+      chapters: [{ name: 'C', order: 0, target_duration: 10 }],
+      videos: [{ video_path: '/v.mp4', segments: [
+        { id: 'r1', start: 0, end: 10, suggestion: 'review', confidence: 0.4, explanation: 'needs review' },
+      ]}],
+    });
+    const ops = protocolReExport(segs, { r1: 'approved' });
+    expect(ops).toHaveLength(0);
   });
 });

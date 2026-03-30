@@ -146,8 +146,17 @@ describe('Transaction', () => {
     it('replays undo stack in reverse order', async () => {
       const api = mockPremiereApi();
       const callOrder = [];
-      api.trimClip.mockImplementation(async () => { callOrder.push('undo-trim'); });
-      api.setClipSpeed.mockImplementation(async () => { callOrder.push('undo-speed'); });
+
+      // Execute returns ok, rollback tracks call order
+      let phase = 'execute';
+      api.trimClip.mockImplementation(async () => {
+        if (phase === 'rollback') callOrder.push('undo-trim');
+        return { ok: true, data: { trimmed: true } };
+      });
+      api.setClipSpeed.mockImplementation(async () => {
+        if (phase === 'rollback') callOrder.push('undo-speed');
+        return { ok: true, data: { speed: 1.5 } };
+      });
 
       const ops = [
         { type: 'trim_clip', params: { clipIndex: 0, inPoint: 0, outPoint: 10, originalInPoint: 0, originalOutPoint: 10 } },
@@ -157,7 +166,7 @@ describe('Transaction', () => {
       const tx = createTransaction(ops);
       await tx.execute(api);
 
-      callOrder.length = 0;
+      phase = 'rollback';
       await tx.rollback(api);
 
       // Reverse order: speed undo first, then trim undo

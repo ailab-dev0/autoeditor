@@ -40,10 +40,8 @@ export function setupPipelineAdapter(bus, transport) {
     stage.value = 'complete';
     percent.value = 100;
     if (pipelineState.value === 'running') {
-      fsm.transition('complete');
+      fsm.transition('complete', data);
     }
-    // pipeline:complete is emitted by the FSM transition above.
-    // The payload is available on the 'ws:analysis:complete' event that domains can listen for.
   });
 
   bus.on('ws:error', (data) => {

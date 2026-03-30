@@ -88,7 +88,6 @@ export function createTransaction(operations, onProgress) {
 
     for (let i = 0; i < sorted.length; i++) {
       const op = sorted[i];
-      const p = op.params;
 
       if (onProgress) {
         try {
@@ -96,8 +95,24 @@ export function createTransaction(operations, onProgress) {
         } catch (_) {}
       }
 
-      const undo = await executeOp(api, op);
-      if (undo) undoEntries.push(undo);
+      try {
+        const result = await executeOp(api, op);
+        if (!result || result.error) {
+          throw new Error(result?.error || `Operation ${op.type} failed`);
+        }
+        if (result.undo) undoEntries.push(result.undo);
+      } catch (err) {
+        // Mid-transaction failure — attempt rollback of completed ops
+        const rollbackResult = await rollback(api).catch(rollbackErr => ({
+          rolledBack: 0,
+          error: String(rollbackErr),
+        }));
+
+        throw new Error(
+          `Transaction failed at op ${i + 1}/${sorted.length} (${op.type}): ${err.message}. ` +
+          `Rolled back ${rollbackResult.rolledBack} ops.`
+        );
+      }
     }
 
     return {
@@ -128,30 +143,23 @@ async function executeOp(api, op) {
 
   switch (op.type) {
     case 'remove_clip': {
-      await api.removeClip(p.trackIndex ?? 0, p.clipIndex ?? 0);
+      const result = await api.removeClip(p.trackIndex ?? 0, p.clipIndex ?? 0);
+      if (!result.ok) return { error: result.error };
       return {
-        type: 'restore_clip',
-        params: {
-          trackIndex: p.trackIndex ?? 0,
-          clipIndex: p.clipIndex,
-          segmentId: p.segmentId,
-          inPoint: p.inPoint,
-          outPoint: p.outPoint,
+        undo: {
+          type: 'restore_clip',
+          params: {
+            trackIndex: p.trackIndex ?? 0,
+            clipIndex: p.clipIndex ?? 0,
+            segmentId: p.segmentId,
+            inPoint: p.inPoint,
+            outPoint: p.outPoint,
+          },
         },
       };
     }
 
     case 'trim_clip': {
-      const undo = {
-        type: 'trim_clip',
-        params: {
-          trackIndex: p.trackIndex ?? 0,
-          clipIndex: p.clipIndex ?? 0,
-          inPoint: p.originalInPoint ?? p.inPoint,
-          outPoint: p.originalOutPoint ?? p.outPoint,
-        },
-      };
-
       let inPt = p.inPoint;
       let outPt = p.outPoint;
 
@@ -167,38 +175,68 @@ async function executeOp(api, op) {
         outPt = outPt - dur * 0.1;
       }
 
-      await api.trimClip(p.trackIndex ?? 0, p.clipIndex ?? 0, inPt, outPt);
-      return undo;
+      const result = await api.trimClip(p.trackIndex ?? 0, p.clipIndex ?? 0, inPt, outPt);
+      if (!result.ok) return { error: result.error };
+      return {
+        undo: {
+          type: 'trim_clip',
+          params: {
+            trackIndex: p.trackIndex ?? 0,
+            clipIndex: p.clipIndex ?? 0,
+            inPoint: p.originalInPoint ?? p.inPoint,
+            outPoint: p.originalOutPoint ?? p.outPoint,
+          },
+        },
+      };
     }
 
     case 'set_speed': {
-      await api.setClipSpeed(p.trackIndex ?? 0, p.clipIndex ?? 0, p.speed ?? 1.5);
+      const result = await api.setClipSpeed(p.trackIndex ?? 0, p.clipIndex ?? 0, p.speed ?? 1.5);
+      if (!result.ok) return { error: result.error };
       return {
-        type: 'set_speed',
-        params: { trackIndex: p.trackIndex ?? 0, clipIndex: p.clipIndex ?? 0, speed: 1.0 },
+        undo: {
+          type: 'set_speed',
+          params: {
+            trackIndex: p.trackIndex ?? 0,
+            clipIndex: p.clipIndex ?? 0,
+            speed: p.originalSpeed ?? 1.0,
+          },
+        },
       };
     }
 
     case 'move_clip': {
-      await api.moveClip(p.trackIndex ?? 0, p.clipIndex ?? 0, p.newPosition ?? 0);
+      const result = await api.moveClip(p.trackIndex ?? 0, p.clipIndex ?? 0, p.newPosition ?? 0);
+      if (!result.ok) return { error: result.error };
       return {
-        type: 'move_clip',
-        params: {
-          trackIndex: p.trackIndex ?? 0,
-          clipIndex: p.clipIndex ?? 0,
-          newPosition: p.originalPosition ?? p.inPoint ?? 0,
+        undo: {
+          type: 'move_clip',
+          params: {
+            trackIndex: p.trackIndex ?? 0,
+            clipIndex: p.clipIndex ?? 0,
+            newPosition: p.originalPosition ?? p.inPoint ?? 0,
+          },
         },
       };
     }
 
     case 'insert_clip': {
-      // insert_clip not yet implemented in shared/premiere.js — stub
-      return { type: 'remove_clip', params: { trackIndex: p.trackIndex ?? 0, clipIndex: 0 } };
+      // insert_clip not yet in shared/premiere.js — record actual target index for undo
+      return {
+        undo: {
+          type: 'remove_clip',
+          params: {
+            trackIndex: p.trackIndex ?? 0,
+            clipIndex: p.clipIndex ?? p.targetIndex ?? 0,
+          },
+        },
+      };
     }
 
     case 'insert_transition': {
-      await api.insertTransition(p.trackIndex ?? 0, p.position ?? 0, p.type || 'Cross Dissolve', p.duration ?? 0.5);
-      return { type: 'noop', params: { note: 'Transition removal not supported' } };
+      const result = await api.insertTransition(p.trackIndex ?? 0, p.position ?? 0, p.type || 'Cross Dissolve', p.duration ?? 0.5);
+      if (!result.ok) return { error: result.error };
+      return { undo: { type: 'noop', params: { note: 'Transition removal not supported' } } };
     }
 
     case 'add_marker': {
@@ -206,14 +244,17 @@ async function executeOp(api, op) {
         p.trackIndex ?? -1, p.time ?? 0, p.duration ?? 0,
         p.name ?? '', p.color ?? 0, p.comment ?? ''
       );
-      const markerId = result?.data?.id || null;
-      return markerId
-        ? { type: 'remove_marker', params: { markerId } }
-        : { type: 'noop', params: {} };
+      if (!result.ok) return { error: result.error };
+      const markerId = result.data?.id || null;
+      return {
+        undo: markerId
+          ? { type: 'remove_marker', params: { markerId } }
+          : { type: 'noop', params: {} },
+      };
     }
 
     default:
-      throw new Error(`Unknown operation type: "${op.type}"`);
+      return { error: `Unknown operation type: "${op.type}"` };
   }
 }
 

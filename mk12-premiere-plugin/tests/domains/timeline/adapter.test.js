@@ -55,7 +55,7 @@ describe('Timeline Adapter', () => {
     expect(transactionState.value).toBe('previewing');
     expect(transactionPreview.value).not.toBeNull();
     expect(transactionPreview.value.opCounts.remove_clip).toBe(1);
-    expect(transactionPreview.value.opCounts.add_marker).toBe(1);
+    expect(transactionPreview.value.totalOperations).toBe(1);
     expect(timelineState.value).toBe('previewing');
   });
 
@@ -68,7 +68,7 @@ describe('Timeline Adapter', () => {
 
     bus.emit('timeline:preview', {});
 
-    expect(timelineError.value).toBe('No approved segments to apply');
+    expect(timelineError.value).toBe('No segments approved');
     expect(transactionState.value).toBe('idle');
   });
 

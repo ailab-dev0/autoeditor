@@ -1,4 +1,5 @@
 import { results, query, provider, stockError, isSearching } from './signals';
+import { addToast } from '../../shared/errors';
 
 export function setupStockAdapter(bus, transport) {
   bus.on('stock:search', async ({ query: q, provider: p }) => {
@@ -19,6 +20,7 @@ export function setupStockAdapter(bus, transport) {
       transport.broadcastSync('stock:results', { count: results.value.length });
     } else {
       stockError.value = result.error;
+      addToast(result.error, 'backend');
       bus.emit('stock:error', { error: result.error });
     }
   });

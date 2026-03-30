@@ -1,4 +1,5 @@
 import { exportFormat, exportProgress, exportError, exportOutput } from './signals';
+import { addToast } from '../../shared/errors';
 
 const POLL_INTERVAL = 2000;
 
@@ -16,6 +17,7 @@ export function setupExportAdapter(bus, transport) {
     if (!result.ok) {
       exportProgress.value = null;
       exportError.value = result.error;
+      addToast(result.error, 'backend');
       bus.emit('export:error', { error: result.error });
       return;
     }
@@ -28,6 +30,7 @@ export function setupExportAdapter(bus, transport) {
         if (!status.ok) {
           exportProgress.value = null;
           exportError.value = status.error;
+          addToast(status.error, 'backend');
           bus.emit('export:error', { error: status.error });
           return;
         }

@@ -1,4 +1,5 @@
 import { graphData, knowledgeError } from './signals';
+import { addToast } from '../../shared/errors';
 
 export function setupKnowledgeAdapter(bus, transport) {
   bus.on('knowledge:fetch', async ({ projectId, conceptId }) => {
@@ -12,6 +13,7 @@ export function setupKnowledgeAdapter(bus, transport) {
       transport.broadcastSync('knowledge:fetched', { projectId });
     } else {
       knowledgeError.value = result.error;
+      addToast(result.error, 'backend');
       bus.emit('knowledge:error', { error: result.error });
     }
   });

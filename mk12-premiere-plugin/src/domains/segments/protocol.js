@@ -148,81 +148,8 @@ function validateSegments(segments, videoIndex, errors) {
   });
 }
 
-/**
- * Convert approved segments + approvals map into timeline operations.
- * @param {Array<object>} segs - Flat segment array
- * @param {Record<string, 'approved'|'rejected'|'pending'>} apps - Approval map
- * @returns {Array<{type: string, params: object}>}
- */
-export function toTimelineOperations(segs, apps) {
-  const ops = [];
-
-  for (const seg of segs) {
-    const status = apps[seg.id] || 'pending';
-    if (status !== 'approved') continue;
-
-    switch (seg.suggestion) {
-      case 'cut':
-        ops.push({
-          type: 'remove_clip',
-          params: {
-            trackIndex: seg.trackIndex ?? 0,
-            clipIndex: seg.clipIndex ?? 0,
-            segmentId: seg.id,
-            inPoint: seg.start ?? seg.inPoint,
-            outPoint: seg.end ?? seg.outPoint,
-          },
-        });
-        break;
-
-      case 'trim_start':
-      case 'trim_end':
-      case 'trim_both':
-        ops.push({
-          type: 'trim_clip',
-          params: {
-            trackIndex: seg.trackIndex ?? 0,
-            clipIndex: seg.clipIndex ?? 0,
-            segmentId: seg.id,
-            trimType: seg.suggestion.replace('trim_', ''),
-            inPoint: seg.start ?? seg.inPoint,
-            outPoint: seg.end ?? seg.outPoint,
-            originalInPoint: seg.start ?? seg.inPoint,
-            originalOutPoint: seg.end ?? seg.outPoint,
-          },
-        });
-        break;
-
-      case 'speed_up':
-        ops.push({
-          type: 'set_speed',
-          params: {
-            trackIndex: seg.trackIndex ?? 0,
-            clipIndex: seg.clipIndex ?? 0,
-            segmentId: seg.id,
-            speed: seg.speed ?? 1.5,
-          },
-        });
-        break;
-
-      case 'keep':
-        ops.push({
-          type: 'add_marker',
-          params: {
-            time: seg.start ?? seg.inPoint ?? 0,
-            duration: (seg.end ?? seg.outPoint ?? 0) - (seg.start ?? seg.inPoint ?? 0),
-            name: `Keep: ${seg.label || seg.id}`,
-            color: 3, // green marker index
-            comment: seg.explanation || '',
-            segmentId: seg.id,
-          },
-        });
-        break;
-    }
-  }
-
-  return ops;
-}
+// Re-export from operations.js — canonical approval gate logic lives there
+export { toMarkerData, toTimelineOperations } from './operations.js';
 
 /**
  * Parse an edit package into a flat array of enriched segments.

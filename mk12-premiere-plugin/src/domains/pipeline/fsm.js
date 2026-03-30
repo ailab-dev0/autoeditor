@@ -19,7 +19,7 @@ export function createPipelineFsm(bus) {
     return allowed ? allowed.includes(newState) : false;
   }
 
-  function transition(newState) {
+  function transition(newState, payload) {
     if (!canTransition(newState)) {
       throw new Error(
         `Invalid pipeline transition: ${pipelineState.value} → ${newState}. ` +
@@ -29,9 +29,9 @@ export function createPipelineFsm(bus) {
 
     pipelineState.value = newState;
 
-    if (newState === 'running') bus.emit('pipeline:started', {});
-    if (newState === 'complete') bus.emit('pipeline:complete', {});
-    if (newState === 'failed') bus.emit('pipeline:error', {});
+    if (newState === 'running') bus.emit('pipeline:started', payload || {});
+    if (newState === 'complete') bus.emit('pipeline:complete', payload || {});
+    if (newState === 'failed') bus.emit('pipeline:error', payload || {});
   }
 
   return { transition, canTransition };

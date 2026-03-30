@@ -8,7 +8,8 @@ import {
 import { createTimelineFsm } from './fsm.js';
 import { createTransaction } from './transaction.js';
 import { segments, approvals } from '../segments/signals.js';
-import { toTimelineOperations } from '../segments/protocol.js';
+import { toTimelineOperations } from '../segments/operations.js';
+import { addToast, categorizeError } from '../../shared/errors.js';
 
 export function setupTimelineAdapter(bus, transport) {
   const fsm = createTimelineFsm(bus);
@@ -17,11 +18,28 @@ export function setupTimelineAdapter(bus, transport) {
   bus.on('timeline:preview', () => {
     timelineError.value = null;
 
-    const ops = toTimelineOperations(segments.value, approvals.value);
-    if (ops.length === 0) {
-      timelineError.value = 'No approved segments to apply';
+    // Explicit approval-count guard (#8)
+    const apps = approvals.value;
+    const approvedCount = Object.values(apps).filter(s => s === 'approved').length;
+    if (approvedCount === 0) {
+      timelineError.value = 'No segments approved';
       return;
     }
+
+    const rawOps = toTimelineOperations(segments.value, apps);
+    if (rawOps.length === 0) {
+      timelineError.value = 'No actionable operations from approved segments';
+      return;
+    }
+
+    // Wrap flat ops from operations.js into {type, params} for createTransaction.
+    // Filter out 'keep' ops — they're informational, not executable.
+    const ops = rawOps
+      .filter(op => op.type !== 'keep')
+      .map(op => {
+        const { type, ...params } = op;
+        return { type, params };
+      });
 
     try {
       const onProgress = (p) => { applyProgress.value = p; };
@@ -52,9 +70,12 @@ export function setupTimelineAdapter(bus, transport) {
       transactionState.value = 'applied';
       fsm.transition('applied');
     } catch (err) {
-      timelineError.value = String(err);
+      const msg = String(err);
+      timelineError.value = msg;
       transactionState.value = 'failed';
       fsm.transition('failed');
+      const cat = categorizeError(err);
+      if (cat === 'backend' || cat === 'premiere') addToast(msg, cat);
     }
   });
 
@@ -71,7 +92,9 @@ export function setupTimelineAdapter(bus, transport) {
       undoStack.value = [];
       applyProgress.value = null;
     } catch (err) {
-      timelineError.value = `Rollback failed: ${err}`;
+      const msg = `Rollback failed: ${err}`;
+      timelineError.value = msg;
+      addToast(msg, 'premiere');
     }
   });
 

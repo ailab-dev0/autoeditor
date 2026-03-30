@@ -7,6 +7,10 @@ import { setupAuthAdapter } from '../../domains/auth/adapter';
 import { setupPipelineAdapter } from '../../domains/pipeline/adapter';
 import { setupSegmentsAdapter } from '../../domains/segments/adapter';
 import { setupTimelineAdapter } from '../../domains/timeline/adapter';
+import { setupStockAdapter } from '../../domains/stock/adapter';
+import { setupTranscriptAdapter } from '../../domains/transcript/adapter';
+import { setupExportAdapter } from '../../domains/export/adapter';
+import { setupKnowledgeAdapter } from '../../domains/knowledge/adapter';
 import { Shell } from '../../shell/Shell';
 
 let bus = null;
@@ -27,6 +31,10 @@ export function show() {
   setupPipelineAdapter(bus, transport);
   setupSegmentsAdapter(bus, transport);
   setupTimelineAdapter(bus, transport);
+  setupStockAdapter(bus, transport);
+  setupTranscriptAdapter(bus, transport);
+  setupExportAdapter(bus, transport);
+  setupKnowledgeAdapter(bus, transport);
 
   render(<Shell bus={bus} />, document.getElementById('root'));
 
