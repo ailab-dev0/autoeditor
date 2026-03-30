@@ -1,0 +1,31 @@
+{
+  "name": "mk12-editorlens-plugin-v2",
+  "version": "2.0.0",
+  "description": "EditorLens v2 — Premiere Pro UXP plugin",
+  "private": true,
+  "scripts": {
+    "build": "webpack --mode production",
+    "dev": "webpack --mode development --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "preact": "^10.25.0",
+    "@preact/signals": "^1.3.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@babel/preset-react": "^7.25.0",
+    "@testing-library/preact": "^3.2.4",
+    "babel-loader": "^9.2.1",
+    "copy-webpack-plugin": "^12.0.2",
+    "css-loader": "^7.1.2",
+    "html-webpack-plugin": "^5.6.3",
+    "jsdom": "^25.0.1",
+    "style-loader": "^4.0.0",
+    "vitest": "^2.1.0",
+    "webpack": "^5.97.0",
+    "webpack-cli": "^6.0.0"
+  }
+}
