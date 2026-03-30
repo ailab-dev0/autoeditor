@@ -27,28 +27,38 @@ const REVIEW_TABS = [
   { id: 'export', label: 'Export' },
 ];
 
+function TabBar() {
+  const current = activeTab.value;
+
+  return (
+    <div style="display:flex;flex-direction:row;border-bottom:1px solid #333;padding:0 8px;gap:0">
+      {REVIEW_TABS.map(t => {
+        const active = current === t.id;
+        return (
+          <div
+            key={t.id}
+            onClick={() => { activeTab.value = t.id; }}
+            style={`padding:8px 14px;cursor:pointer;font-size:12px;font-weight:500;border-bottom:2px solid ${active ? '#4dabf7' : 'transparent'};color:${active ? '#e0e0e0' : '#999'};user-select:none`}
+          >
+            {t.label}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ReviewingView({ bus, projectId }) {
   const tab = activeTab.value;
 
   return (
-    <div class="flex-col" style="height:100%">
-      <sp-action-group compact style="padding:4px 8px;border-bottom:1px solid var(--spectrum-global-color-gray-300,#444)">
-        {REVIEW_TABS.map(t => (
-          <sp-action-button
-            key={t.id}
-            selected={tab === t.id ? '' : undefined}
-            onClick={() => { activeTab.value = t.id; }}
-          >
-            {t.label}
-          </sp-action-button>
-        ))}
-      </sp-action-group>
-
+    <div style="display:flex;flex-direction:column;height:100%">
+      <TabBar />
       <div style="flex:1;overflow:hidden">
         {tab === 'segments' && <SegmentList bus={bus} />}
         {tab === 'stock' && <StockBrowser bus={bus} />}
-        {tab === 'transcript' && <TranscriptView bus={bus} />}
-        {tab === 'knowledge' && <KnowledgeGraph bus={bus} />}
+        {tab === 'transcript' && <TranscriptView bus={bus} projectId={projectId} />}
+        {tab === 'knowledge' && <KnowledgeGraph bus={bus} projectId={projectId} />}
         {tab === 'export' && <ExportPanel bus={bus} projectId={projectId} />}
       </div>
     </div>

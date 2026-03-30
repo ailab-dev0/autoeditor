@@ -1,7 +1,7 @@
+/**
+ * ConfidenceRibbon — horizontal confidence bar with percentage.
+ */
 import { h } from 'preact';
-
-const WIDTH = 48;
-const HEIGHT = 8;
 
 function getColor(confidence) {
   if (confidence < 0.5) return '#E74C3C';
@@ -11,16 +11,14 @@ function getColor(confidence) {
 
 export function ConfidenceRibbon({ confidence }) {
   const pct = Math.round(confidence * 100);
-  const fillWidth = (confidence * WIDTH);
   const color = getColor(confidence);
 
   return (
-    <span class="flex-row gap-sm" style="align-items:center" title={`${pct}% confidence`}>
-      <svg width={WIDTH} height={HEIGHT} role="img" aria-label={`${pct}% confidence`}>
-        <rect x="0" y="0" width={WIDTH} height={HEIGHT} rx="2" fill="#333" />
-        <rect x="0" y="0" width={fillWidth} height={HEIGHT} rx="2" fill={color} />
-      </svg>
-      <span style="font-size:10px;min-width:28px">{pct}%</span>
-    </span>
+    <div style="display:flex;flex-direction:row;align-items:center;gap:6px;min-width:80px">
+      <div style="flex:1;height:6px;border-radius:3px;background:#333;overflow:hidden">
+        <div style={`width:${pct}%;height:100%;border-radius:3px;background:${color}`} />
+      </div>
+      <span style={`font-size:10px;color:${color};min-width:30px`}>{pct}%</span>
+    </div>
   );
 }

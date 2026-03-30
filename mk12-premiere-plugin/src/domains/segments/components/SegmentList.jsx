@@ -1,67 +1,81 @@
+/**
+ * SegmentList — filter bar, stats, scrollable segment cards, bulk actions.
+ * UXP: styled divs for filter bar, sp-button for actions.
+ */
 import { h } from 'preact';
-import { useRef, useState, useCallback } from 'preact/hooks';
-import { useSignalEffect } from '@preact/signals';
-import { filteredSegments, segmentFilter, approvals } from '../signals';
+import { filteredSegments, segments, segmentFilter, approvals, stats } from '../signals';
 import { SegmentCard } from './SegmentCard';
 
-const ROW_HEIGHT = 52;
-const OVERSCAN = 4;
 const FILTERS = ['all', 'approved', 'rejected', 'pending', 'review'];
 
+function filterCount(filter, segs, apps) {
+  if (filter === 'all') return segs.length;
+  if (filter === 'review') return segs.filter(s => s.suggestion === 'review').length;
+  return segs.filter(s => (apps[s.id] || 'pending') === filter).length;
+}
+
 export function SegmentList({ bus }) {
-  const containerRef = useRef(null);
-  const [scrollTop, setScrollTop] = useState(0);
-  const [containerHeight, setContainerHeight] = useState(400);
-  const [segs, setSegs] = useState([]);
-
-  useSignalEffect(() => {
-    setSegs(filteredSegments.value);
-  });
-
-  const onScroll = useCallback((e) => {
-    setScrollTop(e.target.scrollTop);
-    setContainerHeight(e.target.clientHeight);
-  }, []);
-
-  const totalHeight = segs.length * ROW_HEIGHT;
-  const startIdx = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
-  const endIdx = Math.min(segs.length, Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + OVERSCAN);
-  const visibleSegs = segs.slice(startIdx, endIdx);
+  const segs = segments.value;
+  const apps = approvals.value;
+  const filtered = filteredSegments.value;
+  const st = stats.value;
+  const currentFilter = segmentFilter.value;
 
   return (
-    <div class="flex-col gap-sm">
-      <sp-action-group compact>
-        {FILTERS.map(f => (
-          <sp-action-button
-            key={f}
-            selected={segmentFilter.value === f ? '' : undefined}
-            onClick={() => { segmentFilter.value = f; }}
-          >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-          </sp-action-button>
-        ))}
-      </sp-action-group>
-
-      <div
-        ref={containerRef}
-        class="segment-list-scroll"
-        style={`height:100%;overflow-y:auto;position:relative`}
-        onScroll={onScroll}
-      >
-        <div style={`height:${totalHeight}px;position:relative`}>
-          {visibleSegs.map((seg, i) => (
+    <div style="display:flex;flex-direction:column;height:100%">
+      <div style="display:flex;flex-direction:row;gap:4px;padding:8px 10px;border-bottom:1px solid #333;flex-wrap:wrap">
+        {FILTERS.map(f => {
+          const active = currentFilter === f;
+          const count = filterCount(f, segs, apps);
+          return (
             <div
-              key={seg.id}
-              style={`position:absolute;top:${(startIdx + i) * ROW_HEIGHT}px;height:${ROW_HEIGHT}px;width:100%`}
+              key={f}
+              onClick={() => { segmentFilter.value = f; }}
+              style={`padding:4px 10px;border-radius:3px;font-size:11px;cursor:pointer;user-select:none;background:${active ? '#4dabf7' : '#333'};color:${active ? '#fff' : '#999'}`}
             >
-              <SegmentCard
-                segment={seg}
-                approval={approvals.value[seg.id] || 'pending'}
-                bus={bus}
-              />
+              {f.charAt(0).toUpperCase() + f.slice(1)} ({count})
             </div>
-          ))}
-        </div>
+          );
+        })}
+      </div>
+
+      <div style="padding:6px 10px;color:#999;font-size:11px;border-bottom:1px solid #333">
+        {st.total} segments | {st.approvedCount} approved | {st.rejectedCount} rejected | Avg confidence: {Math.round(st.avgConfidence * 100)}%
+      </div>
+
+      <div style="flex:1;overflow-y:auto">
+        {filtered.length === 0 && (
+          <div style="padding:16px;color:#666;font-size:12px;text-align:center">No segments match filter</div>
+        )}
+        {filtered.map(seg => (
+          <SegmentCard
+            key={seg.id}
+            segment={seg}
+            approval={apps[seg.id] || 'pending'}
+            bus={bus}
+          />
+        ))}
+      </div>
+
+      <div style="display:flex;flex-direction:row;gap:8px;padding:8px 10px;border-top:1px solid #333">
+        <sp-button
+          variant="accent"
+          style="flex:1"
+          onClick={() => {
+            segs.forEach(s => bus.emit('segments:approve', { segmentId: s.id }));
+          }}
+        >
+          Approve All
+        </sp-button>
+        <sp-button
+          variant="negative"
+          style="flex:1"
+          onClick={() => {
+            segs.forEach(s => bus.emit('segments:reject', { segmentId: s.id }));
+          }}
+        >
+          Reject All
+        </sp-button>
       </div>
     </div>
   );

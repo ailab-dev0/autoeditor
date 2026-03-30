@@ -1,25 +1,26 @@
 /**
  * HeatmapOverlay — visual strip showing segment decisions as colored blocks.
- * Read-only imports from segments domain. Selection via bus intent (#7, #14).
+ * Read-only imports from segments domain. Selection via bus intent.
  */
 import { h } from 'preact';
 import { segments, approvals, selectedSegmentId } from '../../segments/signals.js';
+import { MARKER_COLORS } from '../../segments/protocol.js';
 
 const COLOR_MAP = {
-  keep: 'var(--spectrum-global-color-green-500, #2d9d78)',
-  cut: 'var(--spectrum-global-color-red-500, #e34850)',
-  trim_start: 'var(--spectrum-global-color-purple-500, #9256d9)',
-  trim_end: 'var(--spectrum-global-color-purple-500, #9256d9)',
-  trim_both: 'var(--spectrum-global-color-purple-500, #9256d9)',
-  review: 'var(--spectrum-global-color-orange-500, #e68619)',
-  speed_up: 'var(--spectrum-global-color-blue-500, #2680eb)',
-  pending: 'var(--spectrum-global-color-gray-400, #999)',
+  keep: '#27AE60',
+  cut: '#E74C3C',
+  trim_start: '#F1C40F',
+  trim_end: '#F1C40F',
+  trim_both: '#F1C40F',
+  rearrange: '#3498DB',
+  speed_up: '#9B59B6',
+  review: '#E67E22',
 };
 
 function getSegmentColor(seg, apps) {
   const status = apps[seg.id] || 'pending';
-  if (status === 'rejected') return 'var(--spectrum-global-color-gray-300, #bbb)';
-  return COLOR_MAP[seg.suggestion] || COLOR_MAP.pending;
+  if (status === 'rejected') return '#555';
+  return COLOR_MAP[seg.suggestion] || '#666';
 }
 
 export function HeatmapOverlay({ bus }) {
@@ -30,31 +31,36 @@ export function HeatmapOverlay({ bus }) {
   if (segs.length === 0) return null;
 
   const totalDuration = segs.reduce((sum, s) => {
-    const dur = (s.end || s.outPoint || 0) - (s.start || s.inPoint || 0);
-    return sum + dur;
+    return sum + ((s.end || s.outPoint || 0) - (s.start || s.inPoint || 0));
   }, 0);
   if (totalDuration <= 0) return null;
 
   return (
-    <div class="heatmap-overlay flex-row" role="img" aria-label="Segment heatmap">
-      {segs.map(seg => {
-        const duration = (seg.end || seg.outPoint || 0) - (seg.start || seg.inPoint || 0);
-        const widthPercent = (duration / totalDuration) * 100;
-        const isSelected = seg.id === selectedId;
+    <div style="display:flex;flex-direction:column;gap:4px;padding:8px 10px">
+      <div style="display:flex;flex-direction:row;height:24px;border-radius:3px;overflow:hidden" role="img" aria-label="Segment heatmap">
+        {segs.map(seg => {
+          const start = seg.start ?? seg.inPoint ?? 0;
+          const end = seg.end ?? seg.outPoint ?? 0;
+          const duration = end - start;
+          const widthPct = (duration / totalDuration) * 100;
+          const isSelected = seg.id === selectedId;
+          const isLowConf = (seg.confidence || 0) < 0.85;
+          const color = getSegmentColor(seg, apps);
 
-        return (
-          <div
-            key={seg.id}
-            class={`heatmap-block${isSelected ? ' heatmap-block--selected' : ''}`}
-            style={`width: ${widthPercent}%; background: ${getSegmentColor(seg, apps)};`}
-            title={`${seg.suggestion} — ${seg.label || seg.id}`}
-            onClick={() => {
-              // Emit intent — segments adapter handles the write (#14)
-              if (bus) bus.emit('segments:select', { segmentId: seg.id });
-            }}
-          />
-        );
-      })}
+          return (
+            <div
+              key={seg.id}
+              onClick={() => { if (bus) bus.emit('segments:select', { segmentId: seg.id }); }}
+              title={`${seg.suggestion} — ${start.toFixed(1)}s-${end.toFixed(1)}s (${Math.round((seg.confidence || 0) * 100)}%)`}
+              style={`width:${widthPct}%;background:${color};cursor:pointer;position:relative;border-right:1px solid #1e1e1e;${isSelected ? 'box-shadow:inset 0 0 0 2px #4dabf7;' : ''}${isLowConf ? 'border-top:2px dashed #999;' : ''}`}
+            />
+          );
+        })}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#666">
+        <span>0s</span>
+        <span>{totalDuration.toFixed(1)}s</span>
+      </div>
     </div>
   );
 }

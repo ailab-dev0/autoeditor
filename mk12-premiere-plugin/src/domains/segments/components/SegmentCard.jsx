@@ -1,3 +1,7 @@
+/**
+ * SegmentCard — individual segment with approve/reject.
+ * UXP: sp-button for actions, inline styles for dark theme.
+ */
 import { h } from 'preact';
 import { selectedSegmentId } from '../signals';
 import { MARKER_COLORS } from '../protocol';
@@ -6,56 +10,47 @@ import { ConfidenceRibbon } from './ConfidenceRibbon';
 export function SegmentCard({ segment, approval, bus }) {
   const isSelected = selectedSegmentId.value === segment.id;
   const color = MARKER_COLORS[segment.suggestion] || MARKER_COLORS.review;
-  const duration = (segment.end - segment.start).toFixed(1);
-  const label = segment.label || segment.explanation || '';
-  const truncated = label.length > 60 ? label.slice(0, 57) + '...' : label;
+  const startTime = (segment.start ?? segment.inPoint ?? 0).toFixed(1);
+  const endTime = (segment.end ?? segment.outPoint ?? 0).toFixed(1);
+  const label = segment.label || segment.explanation || segment.id;
+  const truncated = label.length > 50 ? label.slice(0, 47) + '...' : label;
 
   return (
     <div
-      class={`flex-row gap-sm p-sm segment-card ${isSelected ? 'segment-card--selected' : ''}`}
-      onClick={() => { selectedSegmentId.value = segment.id; }}
-      role="button"
-      data-segment-id={segment.id}
+      onClick={() => {
+        if (bus) bus.emit('segments:select', { segmentId: segment.id });
+      }}
+      style={`display:flex;flex-direction:row;align-items:center;gap:8px;padding:8px 10px;background:#2a2a2a;border-bottom:1px solid #333;border-left:3px solid ${isSelected ? '#4dabf7' : 'transparent'};cursor:pointer`}
     >
-      <span
-        class="segment-badge"
-        style={`background:${color};color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;white-space:nowrap`}
-      >
-        {segment.suggestion}
-      </span>
+      <span style={`display:inline-block;width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0`} />
 
-      <span class="segment-label" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-        {truncated}
-      </span>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+        <span style="color:#e0e0e0;font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{truncated}</span>
+        <div style="display:flex;flex-direction:row;gap:8px;align-items:center">
+          <span style="color:#999;font-size:10px">{startTime}s - {endTime}s</span>
+          <span style={`color:${color};font-size:10px;font-weight:500`}>{segment.suggestion}</span>
+          <ConfidenceRibbon confidence={segment.confidence || 0} />
+        </div>
+      </div>
 
-      <ConfidenceRibbon confidence={segment.confidence} />
-
-      <span class="text-muted" style="font-size:11px;white-space:nowrap">
-        {duration}s
-      </span>
-
-      <span class="segment-actions" style="display:flex;gap:4px">
-        <sp-action-button
+      <div style="display:flex;flex-direction:row;gap:4px;flex-shrink:0">
+        <sp-button
           size="s"
-          disabled={approval === 'approved' ? '' : undefined}
-          onClick={(e) => {
-            e.stopPropagation();
-            bus.emit('segments:approve', { segmentId: segment.id });
-          }}
+          variant={approval === 'approved' ? 'accent' : 'secondary'}
+          onClick={(e) => { e.stopPropagation(); bus.emit('segments:approve', { segmentId: segment.id }); }}
+          style="min-width:0;padding:2px 8px;font-size:11px"
         >
-          ✓
-        </sp-action-button>
-        <sp-action-button
+          {approval === 'approved' ? 'Approved' : 'Approve'}
+        </sp-button>
+        <sp-button
           size="s"
-          disabled={approval === 'rejected' ? '' : undefined}
-          onClick={(e) => {
-            e.stopPropagation();
-            bus.emit('segments:reject', { segmentId: segment.id });
-          }}
+          variant={approval === 'rejected' ? 'negative' : 'secondary'}
+          onClick={(e) => { e.stopPropagation(); bus.emit('segments:reject', { segmentId: segment.id }); }}
+          style="min-width:0;padding:2px 8px;font-size:11px"
         >
-          ✗
-        </sp-action-button>
-      </span>
+          {approval === 'rejected' ? 'Rejected' : 'Reject'}
+        </sp-button>
+      </div>
     </div>
   );
 }
