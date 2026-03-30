@@ -1,5 +1,6 @@
 /**
- * ServerConnect — shows connection progress, emits health check on mount.
+ * ServerConnect — connecting screen with cancel option.
+ * UXP Spectrum: sp-progress-bar, sp-button.
  */
 import { h } from 'preact';
 import { useEffect } from 'preact/hooks';
@@ -11,9 +12,17 @@ export function ServerConnect({ bus }) {
   }, [bus]);
 
   return (
-    <div class="flex-col gap-md p-md">
-      <sp-progress-bar indeterminate label="Connecting..." />
-      <span class="text-muted">Connecting to {serverUrl.value}...</span>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:16px;align-items:center;justify-content:center;min-height:200px">
+      <div style="color:#e0e0e0;font-size:14px;text-align:center">Connecting to server...</div>
+      <sp-progress-bar indeterminate style="width:100%;max-width:280px" />
+      <div style="color:#999;font-size:12px;text-align:center">{serverUrl.value}</div>
+      <sp-button
+        variant="secondary"
+        style="margin-top:8px"
+        onClick={() => bus.emit('auth:logout', {})}
+      >
+        Cancel
+      </sp-button>
     </div>
   );
 }

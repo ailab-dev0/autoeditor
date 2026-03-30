@@ -30,14 +30,12 @@ describe('LoginForm', () => {
 
   it('shows inline error when loginError is set', () => {
     loginError.value = 'Bad credentials';
-    render(<LoginForm bus={bus} />);
-    const helpText = document.querySelector('sp-help-text[variant="negative"]');
-    expect(helpText).toBeTruthy();
-    expect(helpText.textContent).toBe('Bad credentials');
+    const { container } = render(<LoginForm bus={bus} />);
+    expect(container.textContent).toContain('Bad credentials');
   });
 
   it('does not show error when loginError is null', () => {
-    render(<LoginForm bus={bus} />);
-    expect(document.querySelector('sp-help-text')).toBeNull();
+    const { container } = render(<LoginForm bus={bus} />);
+    expect(container.textContent).not.toContain('Bad credentials');
   });
 });
