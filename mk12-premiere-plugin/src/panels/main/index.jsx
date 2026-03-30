@@ -1,23 +1,18 @@
 import { h, render } from 'preact';
 import { createEventBus } from '../../shared/event-bus';
 import { createTransport } from '../../shared/transport';
+import { createShellFsm } from '../../shell/fsm';
+import { Shell } from '../../shell/Shell';
 
 let bus = null;
 let transport = null;
-
-function Shell() {
-  return (
-    <div class="flex-col gap-md p-md">
-      <h2>EditorLens</h2>
-      <p class="text-muted">Main panel — v2</p>
-    </div>
-  );
-}
+let fsm = null;
 
 export function show() {
   bus = createEventBus();
   transport = createTransport(bus);
-  render(<Shell />, document.getElementById('root'));
+  fsm = createShellFsm(bus);
+  render(<Shell bus={bus} />, document.getElementById('root'));
 }
 
 export function hide() {
@@ -26,4 +21,5 @@ export function hide() {
   render(null, document.getElementById('root'));
   bus = null;
   transport = null;
+  fsm = null;
 }
