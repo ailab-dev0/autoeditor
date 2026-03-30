@@ -8,6 +8,9 @@
 const VALID_EVENTS = Object.freeze([
   // shell
   'shell:transitioned',
+  'health:check',
+  'projects:fetch', 'projects:fetched',
+  'project:selected',
 
   // auth
   'auth:login', 'auth:logged-in',

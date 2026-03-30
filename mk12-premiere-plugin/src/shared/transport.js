@@ -9,13 +9,13 @@
 import { signal } from '@preact/signals';
 
 // ---------------------------------------------------------------------------
-// Auth token — imported from auth domain when available, placeholder otherwise
+// Auth token — set by auth adapter after import, reads null until then
 // ---------------------------------------------------------------------------
-let tokenSignal;
-try {
-  tokenSignal = require('../../domains/auth/signals').token;
-} catch (_) {
-  tokenSignal = signal(null);
+let tokenSignal = signal(null);
+
+/** Allow auth domain to inject its token signal after import. */
+export function setTokenSignal(sig) {
+  if (sig) tokenSignal = sig;
 }
 
 /** @type {import('@preact/signals').Signal<'disconnected'|'connecting'|'connected'|'reconnecting'>} */

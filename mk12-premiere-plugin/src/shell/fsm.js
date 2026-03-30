@@ -74,8 +74,19 @@ export function createShellFsm(bus) {
     }
   });
 
+  bus.on('auth:logged-in', () => {
+    if (shellState.value === STATES.CONNECTING) {
+      transition(STATES.READY);
+    }
+  });
+
+  bus.on('auth:logged-out', () => {
+    if (canTransition(STATES.UNAUTHENTICATED)) {
+      transition(STATES.UNAUTHENTICATED);
+    }
+  });
+
   bus.on('auth:expired', () => {
-    // Force to UNAUTHENTICATED from any state that allows it
     if (canTransition(STATES.UNAUTHENTICATED)) {
       transition(STATES.UNAUTHENTICATED);
     }

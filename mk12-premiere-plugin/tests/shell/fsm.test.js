@@ -176,5 +176,25 @@ describe('Shell FSM', () => {
       bus.emit('pipeline:complete', {});
       expect(shellState.value).toBe(STATES.READY);
     });
+
+    it('auto-transitions CONNECTING → READY on auth:logged-in', () => {
+      fsm.transition(STATES.CONNECTING);
+      bus.emit('auth:logged-in', { user: { id: 1 } });
+      expect(shellState.value).toBe(STATES.READY);
+    });
+
+    it('ignores auth:logged-in when not in CONNECTING', () => {
+      fsm.transition(STATES.CONNECTING);
+      fsm.transition(STATES.READY);
+      bus.emit('auth:logged-in', {});
+      expect(shellState.value).toBe(STATES.READY);
+    });
+
+    it('auto-transitions to UNAUTHENTICATED on auth:logged-out', () => {
+      fsm.transition(STATES.CONNECTING);
+      fsm.transition(STATES.READY);
+      bus.emit('auth:logged-out', {});
+      expect(shellState.value).toBe(STATES.UNAUTHENTICATED);
+    });
   });
 });

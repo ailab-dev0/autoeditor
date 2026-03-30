@@ -24,7 +24,7 @@ export function ApplySummary({ bus }) {
   return (
     <div class="flex-col gap-md p-md">
       <h3 class="text-md">
-        {state === 'applied' ? 'Edits Applied' : state === 'failed' ? 'Apply Failed' : 'Apply Summary'}
+        {state === 'applied' ? 'Edits Applied' : state === 'failed' ? 'Apply Failed' : state === 'applying' ? 'Applying Edits' : 'Apply Summary'}
       </h3>
 
       <div class="flex-row gap-md" style="flex-wrap: wrap;">

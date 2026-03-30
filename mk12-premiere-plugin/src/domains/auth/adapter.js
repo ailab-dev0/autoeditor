@@ -2,8 +2,11 @@
  * Auth adapter — handles login, refresh, logout intents via transport.
  */
 import { token, user, loginError } from './signals.js';
+import { setTokenSignal } from '../../shared/transport.js';
 
 export function setupAuthAdapter(bus, transport) {
+  // Wire auth token signal into transport for auto-injection
+  setTokenSignal(token);
   bus.on('auth:login', async ({ email, password }) => {
     loginError.value = null;
     const res = await transport.post('/api/auth/login', { email, password });
