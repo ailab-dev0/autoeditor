@@ -10,7 +10,7 @@ export function Shell({ bus }) {
   return (
     <div class="shell flex-col" style="min-height: 100vh;">
       <div class="shell__content" style="flex: 1;">
-        <Router />
+        <Router bus={bus} />
       </div>
       <StatusBar />
     </div>

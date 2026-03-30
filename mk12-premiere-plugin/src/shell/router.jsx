@@ -4,27 +4,13 @@
  */
 import { h } from 'preact';
 import { shellState, STATES } from './fsm';
+import { LoginForm } from '../domains/auth/components/LoginForm.jsx';
+import { ServerConnect } from '../domains/auth/components/ServerConnect.jsx';
+import { ProgressPanel } from '../domains/pipeline/components/ProgressPanel.jsx';
 
-// Placeholder components — replaced when domain modules are built
-function LoginForm() {
-  return <div class="p-md">Login</div>;
-}
-
-function ServerConnect() {
-  return (
-    <div class="p-md flex-col gap-sm">
-      <sp-progress-bar indeterminate label="Connecting..." />
-      <span class="text-muted">Connecting...</span>
-    </div>
-  );
-}
-
+// Placeholders — replaced when domain modules are built
 function ProjectSelector() {
   return <div class="p-md">Select Project</div>;
-}
-
-function ProgressPanel() {
-  return <div class="p-md">Pipeline Running</div>;
 }
 
 function SegmentList() {
@@ -44,7 +30,7 @@ const STATE_VIEWS = {
   [STATES.APPLYING]: ApplySummary,
 };
 
-export function Router() {
+export function Router({ bus }) {
   const View = STATE_VIEWS[shellState.value];
-  return View ? <View /> : null;
+  return View ? <View bus={bus} /> : null;
 }
