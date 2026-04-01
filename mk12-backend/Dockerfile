@@ -17,6 +17,7 @@ COPY package.json package-lock.json ./
 COPY tsconfig.json ./
 COPY src ./src
 COPY tests ./tests
+COPY .env* ./
 
 RUN mkdir -p logs /tmp
 
