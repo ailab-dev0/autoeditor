@@ -86,26 +86,31 @@ function createTransport(bus) {
   // ---------------------------------------------------------------------------
   // HTTP
   // ---------------------------------------------------------------------------
-  function authHeaders() {
+  function authHeaders(hasBody) {
     const token = tokenSignal?.value;
-    const headers = { 'Content-Type': 'application/json' };
+    const headers = {};
+    if (hasBody) headers['Content-Type'] = 'application/json';
     if (token) headers['Authorization'] = `Bearer ${token}`;
     return headers;
   }
 
   async function httpRequest(method, path, body) {
     const url = `${baseUrl}${path}`;
-    const opts = { method, headers: authHeaders() };
-    if (body !== undefined) opts.body = JSON.stringify(body);
+    const hasBody = body !== undefined;
+    const opts = { method, headers: authHeaders(hasBody) };
+    if (hasBody) opts.body = JSON.stringify(body);
 
     try {
       let res = await fetch(url, opts);
 
-      // 401 — emit transport-level event, let auth adapter handle (#13)
+      // 401 — skip retry for auth endpoints (they handle their own errors)
       if (res.status === 401) {
+        if (path.startsWith('/api/auth/')) {
+          return { ok: false, error: 'Invalid credentials' };
+        }
         bus.emit('transport:auth-failed', { path, retryable: true });
         await new Promise(r => setTimeout(r, 500));
-        opts.headers = authHeaders();
+        opts.headers = authHeaders(hasBody);
         res = await fetch(url, opts);
         if (res.status === 401) {
           bus.emit('transport:auth-failed', { path, retryable: false });
@@ -156,7 +161,7 @@ function createTransport(bus) {
       clearInterval(heartbeatTimer);
       heartbeatTimer = setInterval(() => {
         if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'ping' }));
+          ws.send(JSON.stringify({ type: 'heartbeat' }));
         }
       }, HEARTBEAT_MS);
     };
@@ -164,10 +169,50 @@ function createTransport(bus) {
     ws.onmessage = (e) => {
       try {
         const msg = JSON.parse(e.data);
-        if (msg.type === 'pong') return;
-        if (msg.type === 'analysis:progress') bus.emit('ws:analysis:progress', msg);
-        else if (msg.type === 'analysis:complete') bus.emit('ws:analysis:complete', msg);
-        else if (msg.type === 'error') bus.emit('ws:error', msg);
+        if (msg.type === 'pong' || msg.type === 'connected') return;
+
+        // Map backend WS protocol → plugin internal events
+        if (msg.type === 'pipeline_status') {
+          // Backend: {type:'pipeline_status', payload:{stage,percentage,stages,error}}
+          const p = msg.payload || msg;
+          bus.emit('ws:analysis:progress', {
+            stage: p.stage || p.current_stage || 'analysis',
+            percent: p.percentage ?? p.overall_progress ?? 0,
+            eta: p.eta || null,
+            cost: p.cost || 0,
+          });
+        } else if (msg.type === 'analyze_response') {
+          // Backend: {type:'analyze_response', payload:{stage,percentage,message,session_id}}
+          const p = msg.payload || msg;
+          bus.emit('ws:analysis:progress', {
+            stage: p.stage || 'transcription',
+            percent: p.percentage ?? 0,
+          });
+        } else if (msg.type === 'edit_package') {
+          // Backend: {type:'edit_package', payload: <editPackage>}
+          bus.emit('ws:analysis:complete', { editPackage: msg.payload });
+        } else if (msg.type === 'analysis:progress') {
+          bus.emit('ws:analysis:progress', msg);
+        } else if (msg.type === 'analysis:complete') {
+          bus.emit('ws:analysis:complete', msg);
+        } else if (msg.type === 'error') {
+          bus.emit('ws:error', msg.payload || msg);
+        } else if (msg.type === 'segment_update') {
+          // Segment sync from dashboard — update local state
+          const p = msg.payload || msg;
+          if (p.segmentId) {
+            bus.emit(p.approved ? 'segments:approve' : 'segments:reject', { segmentId: p.segmentId });
+          }
+        } else if (msg.type === 'project_update') {
+          // Dashboard commands — e.g. "send to timeline"
+          const p = msg.payload || msg;
+          if (p.action === 'timeline_import') {
+            // Fetch latest segments then trigger import
+            bus.emit('segments:fetch', { projectId: p.projectId });
+            // Small delay to let segments load, then trigger import
+            setTimeout(() => bus.emit('timeline:import', {}), 2000);
+          }
+        }
       } catch (_) {}
     };
 
@@ -220,6 +265,7 @@ function createTransport(bus) {
     get: (path) => httpRequest('GET', path),
     post: (path, body) => httpRequest('POST', path, body),
     patch: (path, body) => httpRequest('PATCH', path, body),
+    put: (path, body) => httpRequest('PUT', path, body),
 
     connectWs,
 

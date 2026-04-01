@@ -27,6 +27,9 @@ export const cost = signal(0);
 /** @type {import('@preact/signals').Signal<string|null>} */
 export const pipelineError = signal(null);
 
+/** @type {import('@preact/signals').Signal<Array<{message:string, status?:string}>>} */
+export const pipelineLog = signal([]);
+
 export const isRunning = computed(() => stage.value !== 'idle' && stage.value !== 'complete');
 
 export const stageLabel = computed(() => STAGE_LABELS[stage.value] || stage.value);

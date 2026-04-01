@@ -1,7 +1,3 @@
-/**
- * LoginForm — email/password login with server URL config.
- * UXP Spectrum: sp-textfield, sp-button, no sp-help-text.
- */
 import { h } from 'preact';
 import { useState } from 'preact/hooks';
 import { loginError, serverUrl } from '../signals.js';
@@ -10,56 +6,115 @@ export function LoginForm({ bus }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  function handleSubmit(e) {
+  const handleSubmit = (e) => {
     e.preventDefault();
     bus.emit('auth:login', { email, password });
-  }
-
-  const error = loginError.value;
+  };
 
   return (
-    <form onSubmit={handleSubmit} style="padding:16px;display:flex;flex-direction:column;gap:12px;max-width:320px;margin:0 auto">
-      <h2 style="color:#e0e0e0;text-align:center;margin:16px 0 8px;font-size:18px">EditorLens</h2>
+    h('div', {
+      style: `
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        width: 100%;
+        background: #1e1e1e;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      `
+    },
+      h('form', {
+        onSubmit: handleSubmit,
+        style: `
+          width: 100%;
+          max-width: 280px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        `
+      },
+        h('div', {
+          style: `
+            font-size: 18px;
+            font-weight: bold;
+            color: #e0e0e0;
+            text-align: center;
+            margin-bottom: 6px;
+          `
+        }, 'EditorLens'),
 
-      <div>
-        <label style="display:block;margin-bottom:4px;font-size:12px;color:#999">Server URL</label>
-        <sp-textfield
-          placeholder="http://localhost:8000"
-          value={serverUrl.value}
-          onInput={e => { serverUrl.value = e.target.value; }}
-          style="width:100%"
-        />
-      </div>
+        h('input', {
+          type: 'text',
+          value: serverUrl.value,
+          onInput: (e) => { serverUrl.value = e.target.value; },
+          placeholder: 'Server URL',
+          style: `
+            font-size: 11px;
+            padding: 6px 8px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #999;
+            outline: none;
+          `
+        }),
 
-      <div>
-        <label style="display:block;margin-bottom:4px;font-size:12px;color:#999">Email</label>
-        <sp-textfield
-          placeholder="you@example.com"
-          type="email"
-          value={email}
-          onInput={e => setEmail(e.target.value)}
-          style="width:100%"
-        />
-      </div>
+        h('input', {
+          type: 'email',
+          value: email,
+          onInput: (e) => setEmail(e.target.value),
+          placeholder: 'Email',
+          style: `
+            font-size: 13px;
+            padding: 8px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #e0e0e0;
+            outline: none;
+          `
+        }),
 
-      <div>
-        <label style="display:block;margin-bottom:4px;font-size:12px;color:#999">Password</label>
-        <sp-textfield
-          placeholder="Enter password"
-          type="password"
-          value={password}
-          onInput={e => setPassword(e.target.value)}
-          style="width:100%"
-        />
-      </div>
+        h('input', {
+          type: 'password',
+          value: password,
+          onInput: (e) => setPassword(e.target.value),
+          placeholder: 'Password',
+          style: `
+            font-size: 13px;
+            padding: 8px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #e0e0e0;
+            outline: none;
+          `
+        }),
 
-      <sp-button variant="accent" type="submit" style="width:100%;margin-top:4px">Log In</sp-button>
+        h('button', {
+          type: 'submit',
+          style: `
+            font-size: 13px;
+            font-weight: 600;
+            padding: 8px;
+            background: #4dabf7;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+          `
+        }, 'Log In'),
 
-      {error && (
-        <div style="color:#ff4444;font-size:12px;text-align:center">{error}</div>
-      )}
-
-      <div style="text-align:center;color:#666;font-size:11px;margin-top:8px">v2.0.0</div>
-    </form>
+        loginError.value && h('div', {
+          style: `
+            font-size: 12px;
+            color: #ff4444;
+            text-align: center;
+            margin-top: 2px;
+          `
+        }, loginError.value)
+      )
+    )
   );
 }

@@ -13,10 +13,10 @@ describe('LoginForm', () => {
   });
 
   it('renders email and password fields and submit button', () => {
-    render(<LoginForm bus={bus} />);
-    expect(document.querySelector('sp-textfield[type="email"]')).toBeTruthy();
-    expect(document.querySelector('sp-textfield[type="password"]')).toBeTruthy();
-    expect(document.querySelector('sp-button')).toBeTruthy();
+    const { container } = render(<LoginForm bus={bus} />);
+    expect(container.querySelector('input[type="email"]')).toBeTruthy();
+    expect(container.querySelector('input[type="password"]')).toBeTruthy();
+    expect(container.querySelector('button[type="submit"]')).toBeTruthy();
   });
 
   it('emits auth:login on form submit', async () => {

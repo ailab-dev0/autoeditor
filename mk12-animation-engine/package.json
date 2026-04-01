@@ -1,0 +1,46 @@
+{
+  "name": "mk12-animation-engine",
+  "version": "1.0.0",
+  "description": "EditorLens MK-12 Animation/Content Generation Engine — Remotion-powered motion graphics from content marks",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio --port 4200",
+    "render": "npx tsx src/render.ts",
+    "generate": "npx tsx src/generate.ts",
+    "build": "remotion render",
+    "server": "npx tsx src/api/server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/animated-emoji": "4.0.440",
+    "@remotion/animation-utils": "4.0.440",
+    "@remotion/bundler": "4.0.440",
+    "@remotion/cli": "4.0.440",
+    "@remotion/cloudrun": "4.0.440",
+    "@remotion/enable-scss": "4.0.440",
+    "@remotion/fonts": "4.0.440",
+    "@remotion/gif": "4.0.440",
+    "@remotion/google-fonts": "4.0.440",
+    "@remotion/install-whisper-cpp": "4.0.440",
+    "@remotion/renderer": "4.0.440",
+    "@remotion/shapes": "4.0.440",
+    "@remotion/transitions": "4.0.440",
+    "commander": "13.1.0",
+    "express": "4.21.2",
+    "openai": "4.82.0",
+    "remotion": "4.0.440",
+    "uuid": "11.1.0",
+    "zod": "3.24.2"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.1",
+    "@types/node": "22.13.4",
+    "@types/react": "19.0.8",
+    "@types/react-dom": "19.0.3",
+    "@types/uuid": "10.0.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "tsx": "4.19.3",
+    "typescript": "5.7.3"
+  }
+}

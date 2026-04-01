@@ -2,6 +2,7 @@
   "id": "mk12.editorlens.v2",
   "name": "EditorLens",
   "version": "2.0.0",
+  "main": "index.html",
   "manifestVersion": 5,
   "host": {
     "app": "premierepro",
@@ -12,37 +13,37 @@
       "type": "panel",
       "id": "editorlens.main",
       "label": "EditorLens",
-      "mainPath": "panels/main/index.html",
-      "script": "panels/main/index.js",
-      "minimumSize": { "width": 300, "height": 400 },
-      "preferredDockedSize": { "width": 450, "height": 800 },
+      "minimumSize": { "width": 640, "height": 360 },
+      "preferredDockedSize": { "width": 1024, "height": 576 },
+      "preferredFloatingSize": { "width": 1024, "height": 576 },
       "icons": [
-        { "width": 23, "height": 23, "path": "icons/icon_D.png", "scale": [1], "theme": ["darkest", "dark"] },
-        { "width": 23, "height": 23, "path": "icons/icon_N.png", "scale": [1], "theme": ["lightest", "light"] },
-        { "width": 23, "height": 23, "path": "icons/icon_D@2x.png", "scale": [2], "theme": ["darkest", "dark"] },
-        { "width": 23, "height": 23, "path": "icons/icon_N@2x.png", "scale": [2], "theme": ["lightest", "light"] }
+        { "width": 32, "height": 32, "path": "icons/icon_D.png", "scale": [1, 2], "theme": ["dark", "darkest"], "species": ["generic"] },
+        { "width": 32, "height": 32, "path": "icons/icon_N.png", "scale": [1, 2], "theme": ["lightest", "light"], "species": ["generic"] }
       ]
     },
     {
       "type": "panel",
       "id": "editorlens.stock",
       "label": "EditorLens Stock",
-      "mainPath": "panels/stock/index.html",
-      "script": "panels/stock/index.js",
-      "minimumSize": { "width": 300, "height": 300 },
-      "preferredDockedSize": { "width": 400, "height": 600 }
+      "minimumSize": { "width": 640, "height": 360 },
+      "preferredDockedSize": { "width": 1024, "height": 576 },
+      "preferredFloatingSize": { "width": 1024, "height": 576 }
     },
     {
       "type": "panel",
       "id": "editorlens.transcript",
       "label": "EditorLens Transcript",
-      "mainPath": "panels/transcript/index.html",
-      "script": "panels/transcript/index.js",
-      "minimumSize": { "width": 300, "height": 300 },
-      "preferredDockedSize": { "width": 400, "height": 600 }
+      "minimumSize": { "width": 640, "height": 360 },
+      "preferredDockedSize": { "width": 1024, "height": 576 },
+      "preferredFloatingSize": { "width": 1024, "height": 576 }
     }
   ],
+  "icons": [
+    { "width": 32, "height": 32, "path": "icons/icon_D.png", "scale": [1, 2], "theme": ["dark", "darkest"], "species": ["generic"] },
+    { "width": 32, "height": 32, "path": "icons/icon_N.png", "scale": [1, 2], "theme": ["lightest", "light"], "species": ["generic"] }
+  ],
   "requiredPermissions": {
+    "allowCodeGenerationFromStrings": true,
     "network": {
       "domains": [
         "http://localhost:8000",
@@ -57,9 +58,9 @@
       ]
     },
     "localFileSystem": "fullAccess",
-    "allowCodeGenerationFromStrings": true,
     "launchProcess": {
-      "extensions": [".mp4", ".mov", ".wav", ".mp3", ".aac", ".png", ".jpg", ".jpeg"]
+      "schemes": ["http", "https"],
+      "extensions": [".mp4", ".mov", ".mkv", ".avi", ".webm"]
     }
   }
 }

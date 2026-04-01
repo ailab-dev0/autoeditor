@@ -1,4 +1,6 @@
 import { h, render } from 'preact';
+import '../../shared/styles/utilities.css';
+import { entrypoints } from 'uxp';
 import { createEventBus } from '../../shared/event-bus';
 import { createTransport } from '../../shared/transport';
 import { createMockTransport } from '../../shared/mock-transport';
@@ -16,17 +18,19 @@ import { Shell } from '../../shell/Shell';
 let bus = null;
 let transport = null;
 let fsm = null;
+let root = null;
+let attachment = null;
 
 function isDevMode() {
   try { return localStorage.getItem('editorlens-dev') === 'true'; } catch { return false; }
 }
 
-export function show() {
+function initApp() {
+  if (bus) return; // already initialized
   bus = createEventBus();
   transport = isDevMode() ? createMockTransport(bus) : createTransport(bus);
   fsm = createShellFsm(bus);
 
-  // Wire domain adapters
   setupAuthAdapter(bus, transport);
   setupPipelineAdapter(bus, transport);
   setupSegmentsAdapter(bus, transport);
@@ -36,18 +40,60 @@ export function show() {
   setupExportAdapter(bus, transport);
   setupKnowledgeAdapter(bus, transport);
 
-  render(<Shell bus={bus} />, document.getElementById('root'));
-
   if (isDevMode()) {
     console.log('[EditorLens] Dev mode — using mock transport');
   }
 }
 
-export function hide() {
-  transport?.disconnect();
-  bus?.clear();
-  render(null, document.getElementById('root'));
+function teardownApp() {
+  if (root) {
+    render(null, root);
+  }
+  transport?.disconnect?.();
+  bus?.destroy?.();
   bus = null;
   transport = null;
   fsm = null;
+  root = null;
+  attachment = null;
 }
+
+const mainPanelController = {
+  create() {
+    root = document.createElement('div');
+    root.style.height = '100vh';
+    root.style.overflow = 'auto';
+
+    initApp();
+    render(<Shell bus={bus} />, root);
+
+    return root;
+  },
+
+  show(event) {
+    if (!root) this.create();
+    attachment = event;
+    attachment.appendChild(root);
+  },
+
+  hide() {
+    if (attachment && root) {
+      attachment.removeChild(root);
+      attachment = null;
+    }
+  },
+
+  destroy() {
+    teardownApp();
+  }
+};
+
+entrypoints.setup({
+  plugin: {
+    create() { console.log('[EditorLens v2] Plugin created'); },
+    destroy() { console.log('[EditorLens v2] Plugin destroyed'); }
+  },
+  panels: {
+    'editorlens.main': mainPanelController
+  }
+});

@@ -1,28 +1,115 @@
-/**
- * ServerConnect — connecting screen with cancel option.
- * UXP Spectrum: sp-progress-bar, sp-button.
- */
 import { h } from 'preact';
 import { useEffect } from 'preact/hooks';
 import { serverUrl } from '../signals.js';
 
+const SPIN_KEYFRAMES = `
+@keyframes el-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes el-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+`;
+
 export function ServerConnect({ bus }) {
   useEffect(() => {
     bus.emit('health:check', {});
-  }, [bus]);
+  }, []);
 
   return (
-    <div style="padding:16px;display:flex;flex-direction:column;gap:16px;align-items:center;justify-content:center;min-height:200px">
-      <div style="color:#e0e0e0;font-size:14px;text-align:center">Connecting to server...</div>
-      <sp-progress-bar indeterminate style="width:100%;max-width:280px" />
-      <div style="color:#999;font-size:12px;text-align:center">{serverUrl.value}</div>
-      <sp-button
-        variant="secondary"
-        style="margin-top:8px"
-        onClick={() => bus.emit('auth:logout', {})}
-      >
-        Cancel
-      </sp-button>
-    </div>
+    h('div', {
+      style: `
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        width: 100%;
+        background: #1e1e1e;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      `
+    },
+      h('style', null, SPIN_KEYFRAMES),
+
+      h('div', {
+        style: `
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 14px;
+        `
+      },
+        // Spinner
+        h('div', {
+          style: `
+            width: 36px;
+            height: 36px;
+            border: 3px solid #4dabf7;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: el-spin 0.8s linear infinite;
+          `
+        }),
+
+        // Label
+        h('div', {
+          style: `
+            font-size: 13px;
+            font-weight: 500;
+            color: #e0e0e0;
+          `
+        }, 'Connecting...'),
+
+        // Indeterminate progress bar
+        h('div', {
+          style: `
+            width: 200px;
+            height: 3px;
+            background: #2a2a2a;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+          `
+        },
+          h('div', {
+            style: `
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 50%;
+              height: 100%;
+              background: #4dabf7;
+              border-radius: 2px;
+              animation: el-slide 1.2s ease-in-out infinite;
+            `
+          })
+        ),
+
+        // Server URL
+        h('div', {
+          style: `
+            font-size: 10px;
+            color: #999;
+          `
+        }, serverUrl.value),
+
+        // Cancel button
+        h('button', {
+          onClick: () => bus.emit('auth:logout', {}),
+          style: `
+            font-size: 11px;
+            font-weight: 500;
+            padding: 4px 12px;
+            background: transparent;
+            color: #999;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 4px;
+          `
+        }, 'Cancel')
+      )
+    )
   );
 }

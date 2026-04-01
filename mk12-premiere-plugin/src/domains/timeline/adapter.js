@@ -10,6 +10,7 @@ import { createTransaction } from './transaction.js';
 import { segments, approvals } from '../segments/signals.js';
 import { toTimelineOperations } from '../segments/operations.js';
 import { addToast, categorizeError } from '../../shared/errors.js';
+import { buildTimeline } from '../../shared/premiere.js';
 
 export function setupTimelineAdapter(bus, transport) {
   const fsm = createTimelineFsm(bus);
@@ -95,6 +96,63 @@ export function setupTimelineAdapter(bus, transport) {
       const msg = `Rollback failed: ${err}`;
       timelineError.value = msg;
       addToast(msg, 'premiere');
+    }
+  });
+
+  // Import approved segments to timeline as new clips (builds the edit from scratch)
+  bus.on('timeline:import', async () => {
+    timelineError.value = null;
+
+    const segs = segments.value;
+    const apps = approvals.value;
+
+    // Only place approved segments
+    const approved = segs.filter(seg => apps[seg.id] === 'approved');
+    if (approved.length === 0) {
+      timelineError.value = 'No approved segments to import. Review and approve segments first.';
+      return;
+    }
+
+    transactionState.value = 'applying';
+    fsm.transition('applying');
+
+    const onProgress = (p) => { applyProgress.value = p; };
+
+    // Download function: fetches video from backend MinIO to local temp path
+    const downloadFn = async (videoPath) => {
+      try {
+        const key = videoPath.startsWith('projects/') ? videoPath : `projects/${videoPath}`;
+        const result = await transport.get(`/api/upload/download-url?key=${encodeURIComponent(key)}`);
+        if (!result.ok || !result.data?.url) return null;
+
+        // Download to temp directory
+        const fs = require('uxp').storage.localFileSystem;
+        const tempFolder = await fs.getTemporaryFolder();
+        const fileName = videoPath.split('/').pop() || 'media.mp4';
+        const tempFile = await tempFolder.createFile(fileName, { overwrite: true });
+
+        const response = await fetch(result.data.url);
+        const buffer = await response.arrayBuffer();
+        await tempFile.write(buffer);
+
+        return tempFile.nativePath;
+      } catch (err) {
+        console.warn('[timeline] Download fallback failed:', err);
+        return null;
+      }
+    };
+
+    const result = await buildTimeline(approved, onProgress, downloadFn);
+
+    if (result.ok) {
+      applyProgress.value = { current: result.data.executed, total: result.data.executed, label: 'Complete' };
+      transactionState.value = 'applied';
+      fsm.transition('applied');
+    } else {
+      timelineError.value = result.error;
+      transactionState.value = 'failed';
+      fsm.transition('failed');
+      addToast(result.error, 'premiere');
     }
   });
 

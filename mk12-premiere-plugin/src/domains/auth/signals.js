@@ -7,11 +7,20 @@ const stored = typeof localStorage !== 'undefined' && typeof localStorage.getIte
   ? localStorage.getItem('editorlens:serverUrl')
   : null;
 
+// Restore token from localStorage on startup
+let storedToken = null;
+let storedUser = null;
+try {
+  storedToken = localStorage.getItem('editorlens:token') || null;
+  const u = localStorage.getItem('editorlens:user');
+  if (u) storedUser = JSON.parse(u);
+} catch (_) {}
+
 /** @type {import('@preact/signals').Signal<string|null>} */
-export const token = signal(null);
+export const token = signal(storedToken);
 
 /** @type {import('@preact/signals').Signal<object|null>} */
-export const user = signal(null);
+export const user = signal(storedUser);
 
 export const isAuthenticated = computed(() => token.value !== null);
 

@@ -1,22 +1,16 @@
 const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
-
-const panels = ['main', 'stock', 'transcript'];
 
 module.exports = (env, argv) => {
   const isProd = argv.mode === 'production';
 
   return {
-    entry: Object.fromEntries(
-      panels.map(p => [p, `./src/panels/${p}/index.jsx`])
-    ),
+    entry: './src/index.jsx',
 
     output: {
       path: path.resolve(__dirname, 'dist'),
-      filename: 'panels/[name]/index.js',
+      filename: 'index.js',
       clean: true,
-      library: { type: 'commonjs2' },
     },
 
     devtool: isProd ? false : 'source-map',
@@ -44,16 +38,11 @@ module.exports = (env, argv) => {
     },
 
     plugins: [
-      ...panels.map(
-        p =>
-          new HtmlWebpackPlugin({
-            template: `./src/panels/${p}/index.html`,
-            filename: `panels/${p}/index.html`,
-            chunks: [p],
-          })
-      ),
       new CopyWebpackPlugin({
-        patterns: [{ from: 'plugin', to: '.' }],
+        patterns: [
+          { from: 'plugin', to: '.' },
+          { from: 'src/index.html', to: 'index.html' },
+        ],
       }),
     ],
 
@@ -67,6 +56,7 @@ module.exports = (env, argv) => {
 
     externals: {
       premierepro: 'commonjs2 premierepro',
+      uxp: 'commonjs2 uxp',
     },
   };
 };

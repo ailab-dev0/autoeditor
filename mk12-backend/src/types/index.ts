@@ -109,7 +109,7 @@ export interface EditPackageV3 {
 // Project
 // ──────────────────────────────────────────────────────────────────
 
-export type ProjectStatus = 'created' | 'analyzing' | 'ready' | 'exporting' | 'error';
+export type ProjectStatus = 'created' | 'analyzing' | 'ready' | 'review' | 'exporting' | 'error';
 
 export interface Project {
   id: string;
@@ -119,7 +119,6 @@ export interface Project {
   tags?: string[];
   video_paths: string[];
   source_urls?: string[];
-  sourceUrl?: string;
   brief?: string;
   fps?: number;
   resolution?: { width: number; height: number };
@@ -127,6 +126,7 @@ export interface Project {
   updated_at: string;
   edit_package?: EditPackageV3;
   pipeline_status?: PipelineStatus;
+  user_id?: string;
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -136,9 +136,8 @@ export interface Project {
 export const PIPELINE_STAGES = [
   'transcription',
   'knowledge_graph',
-  'pedagogical_analysis',
+  'chapter_validation',
   'director_decisions',
-  'package_compilation',
 ] as const;
 
 export type PipelineStageName = typeof PIPELINE_STAGES[number];
@@ -158,6 +157,7 @@ export interface PipelineStage {
 export interface PipelineStatus {
   session_id: string;
   project_id: string;
+  status?: 'running' | 'completed' | 'error';
   current_stage: PipelineStageName;
   overall_progress: number; // 0-100
   stages: PipelineStage[];
@@ -280,6 +280,78 @@ export interface WSPipelineStatus {
 export interface SSEEvent {
   event: string;
   data: Record<string, unknown>;
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Asset Analysis
+// ──────────────────────────────────────────────────────────────────
+
+export interface AssetManifest {
+  assets: MediaAsset[];
+  brief: string;
+  scannedAt: string;
+}
+
+export interface MediaAsset {
+  name: string;
+  path: string;
+  type: 'video' | 'audio' | 'image';
+  selected: boolean;
+  duration?: number;
+  dimensions?: { width: number; height: number };
+  fps?: number;
+  codec?: string;
+  sizeBytes?: number;
+  keyframes?: KeyframeInfo[];
+  silenceRegions?: TimeRegion[];
+  waveformSummary?: number[];
+  transcriptPath?: string;
+}
+
+export interface KeyframeInfo {
+  timestamp: number;
+  storagePath: string;
+  tags?: string[];
+  description?: string;
+}
+
+export interface TimeRegion {
+  start: number;
+  end: number;
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Edit Script (AI-generated timeline assembly)
+// ──────────────────────────────────────────────────────────────────
+
+export interface EditScript {
+  narrative_structure: string;
+  duration_estimate: number;
+  total_cuts: number;
+  pacing: 'slow' | 'moderate' | 'fast' | 'mixed';
+  gaps?: string[];
+  tracks: TrackPlacement[];
+  transitions: ScriptTransition[];
+}
+
+export interface TrackPlacement {
+  type: 'video' | 'audio' | 'image';
+  asset: string;
+  in: number;
+  out: number;
+  track: string;
+  reason: string;
+  label?: string;
+  source_in?: number;
+  source_out?: number;
+  effect?: string;
+  volume?: number;
+}
+
+export interface ScriptTransition {
+  at: number;
+  type: string;
+  duration: number;
 }
 
 // ──────────────────────────────────────────────────────────────────

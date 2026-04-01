@@ -37,16 +37,14 @@ export default function NewProjectPage() {
 
       setError("");
 
-      const filePaths = videos.filter((v) => v.source === "file").map((v) => v.value);
-      const sourceUrls = videos.filter((v) => v.source === "url").map((v) => v.value);
+      const filePaths = videos.map((v) => v.value);
 
       createProject.mutate(
         {
           name: name.trim(),
           description: description.trim() || undefined,
           brief: brief.trim() || undefined,
-          video_paths: filePaths.length > 0 ? filePaths : undefined,
-          source_urls: sourceUrls.length > 0 ? sourceUrls : undefined,
+          videoPaths: filePaths.length > 0 ? filePaths : undefined,
           fps,
           resolution: { width: resWidth, height: resHeight },
           tags: tags.length > 0 ? tags : undefined,

@@ -23,6 +23,17 @@ Build polished, UXP-compatible UI for Premiere Pro panels. Combines UX best prac
 - Premiere API / timeline manipulation (use `uxp-developer` instead)
 - Mobile / React Native UI
 
+## Reference Files
+
+Load the relevant reference file for deep details:
+
+| File | Contents |
+|------|----------|
+| `references/supported-widgets.md` | Complete widget catalog — built-in Spectrum UXP, SWC wrappers, supported/unsupported HTML elements |
+| `references/css-support.md` | Full CSS property support matrix — what works, what doesn't, rendering bugs |
+| `references/dialogs-panels.md` | Panel types, modal dialogs, multi-panel architecture, theming, context menus |
+| `references/component-recipes.md` | Copy-ready component patterns — forms, lists, data viz, navigation, spacing |
+
 ## Core Constraint: UXP is Not a Browser
 
 UXP renders in a stripped-down WebView. Many web APIs and Spectrum components are **missing or broken**. Design defensively.

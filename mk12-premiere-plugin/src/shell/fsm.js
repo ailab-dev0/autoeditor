@@ -8,6 +8,7 @@ export const STATES = {
   UNAUTHENTICATED: 'UNAUTHENTICATED',
   CONNECTING: 'CONNECTING',
   READY: 'READY',
+  MEDIA_SELECT: 'MEDIA_SELECT',
   WORKING: 'WORKING',
   REVIEWING: 'REVIEWING',
   APPLYING: 'APPLYING',
@@ -16,7 +17,8 @@ export const STATES = {
 const TRANSITIONS = {
   UNAUTHENTICATED: ['CONNECTING'],
   CONNECTING: ['READY', 'UNAUTHENTICATED'],
-  READY: ['WORKING', 'UNAUTHENTICATED'],
+  READY: ['MEDIA_SELECT', 'WORKING', 'REVIEWING', 'UNAUTHENTICATED'],
+  MEDIA_SELECT: ['WORKING', 'READY'],
   WORKING: ['REVIEWING', 'READY'],
   REVIEWING: ['APPLYING', 'READY'],
   APPLYING: ['READY', 'REVIEWING'],
@@ -74,8 +76,52 @@ export function createShellFsm(bus) {
     }
   });
 
+  bus.on('project:selected', ({ projectId, projectName }) => {
+    if (shellState.value === STATES.READY) {
+      shellContext.value = { ...shellContext.value, projectId, projectName };
+      // Don't transition yet — wait for project:loaded to decide destination
+      bus.emit('project:loaded', { projectId, projectName });
+    }
+  });
+
+  bus.on('pipeline:go-media-select', ({ projectId, projectName }) => {
+    if (shellState.value === STATES.READY) {
+      transition(STATES.MEDIA_SELECT, { projectId, projectName });
+    }
+  });
+
+  bus.on('pipeline:go-reviewing', ({ projectId, projectName }) => {
+    if (shellState.value === STATES.READY) {
+      transition(STATES.REVIEWING, { projectId, projectName });
+    }
+  });
+
+  bus.on('pipeline:started', ({ projectId }) => {
+    if (shellState.value === STATES.MEDIA_SELECT) {
+      transition(STATES.WORKING, { projectId });
+    }
+  });
+
+  bus.on('pipeline:cancelled', () => {
+    if (shellState.value === STATES.MEDIA_SELECT || shellState.value === STATES.WORKING) {
+      transition(STATES.READY);
+    }
+  });
+
+  bus.on('shell:connecting', () => {
+    if (shellState.value === STATES.UNAUTHENTICATED) {
+      transition(STATES.CONNECTING);
+    }
+  });
+
   bus.on('auth:logged-in', () => {
     if (shellState.value === STATES.CONNECTING) {
+      transition(STATES.READY);
+    }
+  });
+
+  bus.on('shell:reset', () => {
+    if (canTransition(STATES.READY)) {
       transition(STATES.READY);
     }
   });

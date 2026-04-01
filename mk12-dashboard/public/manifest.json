@@ -1,0 +1,22 @@
+{
+  "name": "EditorLens MK-12",
+  "short_name": "MK-12",
+  "description": "AI-powered pedagogical video editing dashboard",
+  "start_url": "/mobile",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#1e96f3",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

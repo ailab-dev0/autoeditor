@@ -1,0 +1,122 @@
+{
+  "team_id": "team-mk12-plugin-001",
+  "team_size": 8,
+  "purpose": "Build EditorLens MK-12 Premiere Pro Plugin (Adobe UXP)",
+  "agents": [
+    {
+      "id": "agent-visionary-01",
+      "name": "Luna",
+      "archetype": "Visionary",
+      "model": "moonshotai/kimi-k2.5",
+      "role_description": "Creative architecture lead. Drives innovative UX patterns for the marker heatmap, confidence visualization, and plugin interactions.",
+      "skills": [
+        "system-design",
+        "project-planning",
+        "sprint-planning"
+      ]
+    },
+    {
+      "id": "agent-visionary-02",
+      "name": "Nova",
+      "archetype": "Visionary",
+      "model": "moonshotai/kimi-k2.5",
+      "role_description": "UX innovation specialist. Designs micro-interactions, animation patterns, and content mark visualization.",
+      "skills": [
+        "system-design",
+        "story-writing",
+        "continuous-improvement"
+      ]
+    },
+    {
+      "id": "agent-grounded-01",
+      "name": "Forge",
+      "archetype": "Grounded",
+      "model": "qwen/qwen3-coder-next",
+      "role_description": "Core systems engineer. Implements state machine, WebSocket manager, and crash recovery. UXP API expert.",
+      "skills": [
+        "code-generation",
+        "debugging",
+        "database-design",
+        "containerization"
+      ]
+    },
+    {
+      "id": "agent-grounded-02",
+      "name": "Steel",
+      "archetype": "Grounded",
+      "model": "qwen/qwen3-coder-next",
+      "role_description": "Protocol and data engineer. Implements Edit Package v3, NDJSON streaming, virtual list performance.",
+      "skills": [
+        "code-generation",
+        "debugging",
+        "estimation"
+      ]
+    },
+    {
+      "id": "agent-architect-01",
+      "name": "Atlas",
+      "archetype": "Architect",
+      "model": "anthropic/claude-sonnet-4",
+      "role_description": "System architect. Designs module boundaries, data flow, component composition, and adapter patterns.",
+      "skills": [
+        "code-architecture",
+        "api-design",
+        "system-design",
+        "domain-driven-design"
+      ]
+    },
+    {
+      "id": "agent-critic-01",
+      "name": "Prism",
+      "archetype": "Critic",
+      "model": "anthropic/claude-sonnet-4",
+      "role_description": "Quality assurance lead. Reviews all code for UXP compliance, performance issues, edge cases, and testing gaps.",
+      "skills": [
+        "code-review",
+        "threat-modeling",
+        "test-planning"
+      ]
+    },
+    {
+      "id": "agent-executor-01",
+      "name": "Bolt",
+      "archetype": "Executor",
+      "model": "qwen/qwen3-coder-next",
+      "role_description": "Implementation specialist. Rapid code output for components, keyboard shortcuts, bulk operations, packaging.",
+      "skills": [
+        "code-generation",
+        "debugging",
+        "refactoring",
+        "unit-testing"
+      ]
+    },
+    {
+      "id": "agent-guardian-01",
+      "name": "Shield",
+      "archetype": "Guardian",
+      "model": "anthropic/claude-sonnet-4",
+      "role_description": "Security and compliance. Validates UXP sandbox compliance, data protection, input validation, error handling.",
+      "skills": [
+        "secure-coding",
+        "access-control-design",
+        "compliance",
+        "monitoring"
+      ]
+    }
+  ],
+  "distribution_check": {
+    "visionary": "25% (2/8)",
+    "grounded": "25% (2/8)",
+    "architect": "12.5% (1/8)",
+    "critic": "12.5% (1/8)",
+    "executor": "12.5% (1/8)",
+    "guardian": "12.5% (1/8)"
+  },
+  "channels": [
+    "team-mk12-main",
+    "mk12-tasks",
+    "mk12-progress",
+    "mk12-blockers",
+    "mk12-review"
+  ]
+}

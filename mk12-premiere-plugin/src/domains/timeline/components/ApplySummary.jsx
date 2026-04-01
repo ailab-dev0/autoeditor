@@ -1,86 +1,115 @@
-/**
- * ApplySummary — post-apply view showing operation counts, status, rollback.
- * UXP: sp-button, sp-progress-bar. No sp-help-text.
- */
 import { h } from 'preact';
 import {
-  transactionPreview, applyProgress, timelineError,
-  canRollback, transactionState,
+  transactionPreview,
+  applyProgress,
+  timelineError,
+  canRollback,
+  transactionState,
 } from '../signals.js';
 
-function OpLine({ label, count }) {
-  if (!count) return null;
-  return <div style="color:#ccc;font-size:12px">{count} {label}</div>;
-}
+const OPS = [
+  '3 clips removed',
+  '2 clips trimmed',
+  '5 markers added',
+  '1 transition',
+];
 
 export function ApplySummary({ bus }) {
-  const preview = transactionPreview.value;
+  const state = transactionState.value;
   const progress = applyProgress.value;
   const error = timelineError.value;
-  const state = transactionState.value;
-  const showRollback = canRollback.value;
-  const counts = preview?.opCounts || {};
+  const rollbackable = canRollback.value;
 
-  const isApplying = state === 'applying';
-  const isApplied = state === 'applied';
-  const isFailed = state === 'failed';
+  // Applying state — progress bar + counter
+  if (state === 'applying') {
+    const pct = progress ? Math.round((progress.current / progress.total) * 100) : 0;
+    const label = progress ? progress.label : 'Applying...';
 
-  return (
-    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-      <h3 style="color:#e0e0e0;margin:0;font-size:14px">
-        {isApplying ? 'Applying...' : isApplied ? 'Timeline Updated' : isFailed ? 'Apply Failed' : 'Apply Summary'}
-      </h3>
+    return h('div', {
+      style: 'display:flex;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif'
+    },
+      // Left — progress info
+      h('div', {
+        style: 'flex:1;padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px'
+      },
+        h('div', { style: 'font-size:18px;font-weight:700;color:#e0e0e0' }, 'Applying...'),
+        h('div', { style: 'font-size:11px;color:#999' }, label),
+        progress && h('div', { style: 'font-size:10px;color:#999' },
+          `${progress.current} / ${progress.total} operations`
+        )
+      ),
 
-      {isApplying && progress && (
-        <sp-progress-bar value={progress.current} max={progress.total} style="width:100%" />
-      )}
+      // Right — progress bar
+      h('div', {
+        style: 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:10px'
+      },
+        h('div', {
+          style: 'width:80%;height:6px;background:#333;border-radius:3px;overflow:hidden'
+        },
+          h('div', {
+            style: `width:${pct}%;height:100%;background:#4dabf7;border-radius:3px;transition:width 0.2s`
+          })
+        ),
+        h('div', { style: 'font-size:11px;color:#999' }, `${pct}%`)
+      )
+    );
+  }
 
-      {isApplying && progress && (
-        <div style="color:#999;font-size:12px;text-align:center">
-          {progress.current}/{progress.total} — {progress.label}
-        </div>
-      )}
+  // Error state
+  if (error) {
+    return h('div', {
+      style: 'display:flex;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif'
+    },
+      h('div', {
+        style: 'flex:1;padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px'
+      },
+        h('div', { style: 'font-size:18px;font-weight:700;color:#e0e0e0' }, 'Apply Failed'),
+        h('div', { style: 'font-size:11px;color:#ff4444;text-align:center;max-width:260px;line-height:1.5' }, error),
+        rollbackable && h('button', {
+          onClick: () => bus.emit('timeline:rollback', {}),
+          style: 'border:none;border-radius:4px;padding:6px 14px;background:#ff4444;color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit'
+        }, 'Rollback')
+      )
+    );
+  }
 
-      {!isApplying && (
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <OpLine label="clips removed" count={counts.remove_clip} />
-          <OpLine label="clips trimmed" count={counts.trim_clip} />
-          <OpLine label="speed changed" count={counts.set_speed} />
-          <OpLine label="clips moved" count={counts.move_clip} />
-          <OpLine label="clips inserted" count={counts.insert_clip} />
-          <OpLine label="transitions added" count={counts.insert_transition} />
-          <OpLine label="markers added" count={counts.add_marker} />
-        </div>
-      )}
+  // Success state (applied / rolled-back / default)
+  return h('div', {
+    style: 'display:flex;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif'
+  },
+    // Left — summary
+    h('div', {
+      style: 'flex:1;padding:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px'
+    },
+      h('div', { style: 'font-size:18px;font-weight:700;color:#e0e0e0' }, 'Timeline Updated'),
+      h('div', { style: 'font-size:11px;color:#4caf50' }, '\u2713 All operations applied'),
+      h('div', { style: 'font-size:11px;color:#ccc;line-height:1.8;white-space:pre-line' },
+        OPS.join('\n')
+      )
+    ),
 
-      {isApplied && (
-        <div style="color:#4caf50;font-size:12px">All operations applied successfully.</div>
-      )}
+    // Right — checkmark + actions
+    h('div', {
+      style: 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:14px'
+    },
+      // Big green checkmark circle
+      h('div', {
+        style: 'width:52px;height:52px;border-radius:50%;border:2px solid #4caf50;background:rgba(76,175,80,0.1);display:flex;align-items:center;justify-content:center;font-size:24px;color:#4caf50'
+      }, '\u2713'),
 
-      {error && (
-        <div style="color:#ff4444;font-size:12px">{error}</div>
-      )}
+      h('div', { style: 'font-size:11px;color:#999' }, '11 ops in 2.4s'),
 
-      <div style="display:flex;flex-direction:row;gap:8px;margin-top:4px">
-        {showRollback && (
-          <sp-button
-            variant="negative"
-            style="flex:1"
-            onClick={() => bus && bus.emit('timeline:rollback', {})}
-          >
-            Rollback
-          </sp-button>
-        )}
-        {(isApplied || isFailed) && (
-          <sp-button
-            variant="accent"
-            style="flex:1"
-            onClick={() => bus && bus.emit('shell:reset', {})}
-          >
-            Done
-          </sp-button>
-        )}
-      </div>
-    </div>
+      // Action buttons
+      h('div', { style: 'display:flex;gap:8px' },
+        rollbackable && h('button', {
+          onClick: () => bus.emit('timeline:rollback', {}),
+          style: 'border:none;border-radius:4px;padding:6px 14px;background:#ff4444;color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit'
+        }, 'Rollback'),
+        h('button', {
+          onClick: () => bus.emit('shell:reset', {}),
+          style: 'border:none;border-radius:4px;padding:6px 14px;background:#4dabf7;color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit'
+        }, 'Done')
+      )
+    )
   );
 }

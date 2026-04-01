@@ -15,12 +15,13 @@ Load the relevant reference file for deep API details:
 
 | File | Contents |
 |------|----------|
-| `references/premiere-api.md` | Full Premiere Pro host API (Project, Sequence, Track, TrackItem, Markers, Effects, Exporter, etc.) |
-| `references/uxp-core-api.md` | UXP shared APIs (filesystem, network, storage, clipboard, dialogs, IPC) |
-| `references/best-practices.md` | Production patterns (lockedAccess+transaction, resilient WebSocket, batch ops, state management) |
+| `references/plugin-creation.md` | **Start here** — Prerequisites, folder structure, manifest v5, entrypoints.setup(), panel lifecycle, UDT loading, scaffolding (Bolt UXP/manual/samples), CCX packaging |
+| `references/premiere-api.md` | Full Premiere Pro host API (Project, Sequence, Track, TrackItem, Markers, Effects, Exporter, SequenceEditor, EventManager, ProjectConverter) |
+| `references/uxp-core-api.md` | UXP shared APIs (filesystem, fetch gotchas, WebSocket gotchas, XHR, storage, secureStorage, clipboard, dialogs, IPC, silent failure modes) |
+| `references/best-practices.md` | Production patterns (lockedAccess sync vs async, network gotchas table, resilient WebSocket, batch ops, cleanup) |
 | `references/migration-guide.md` | CEP → UXP migration (API mapping table, architecture changes, test strategy) |
-| `references/tooling.md` | UDT, Bolt UXP, webpack, TypeScript, CCX packaging |
-| `references/links.md` | External URLs — official docs, GitHub repos, community tools, raw GitHub fallback URLs |
+| `references/tooling.md` | UDT (install, templates, debugging, watch mode, CLI), Bolt UXP, webpack, TypeScript, CCX packaging, Adobe samples |
+| `references/links.md` | External URLs — official docs, GitHub repos, community tools, forum threads, raw GitHub fallback URLs |
 
 ---
 

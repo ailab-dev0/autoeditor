@@ -8,7 +8,9 @@ export function setupKnowledgeAdapter(bus, transport) {
     const result = await transport.get(`/api/projects/${projectId}/knowledge`);
 
     if (result.ok) {
-      graphData.value = result.data;
+      // Backend returns { graph: { nodes, edges } } — unwrap
+      const raw = result.data;
+      graphData.value = raw.graph ?? raw;
       bus.emit('knowledge:fetched', { projectId });
       transport.broadcastSync('knowledge:fetched', { projectId });
     } else {

@@ -1,0 +1,92 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --radius: 0.625rem;
+
+  --background: #0a0a0a;
+  --background-elevated: #1a1a1a;
+  --foreground: #ffffff;
+  --primary: #0B84F3;
+  --primary-hover: #0a75d9;
+  --primary-foreground: #ffffff;
+  --secondary: #333;
+  --secondary-foreground: #ffffff;
+  --muted: #111;
+  --muted-foreground: #888;
+  --muted-foreground-dim: #666;
+  --accent: #2a2a2a;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #f87171;
+  --border: #333;
+  --border-dim: #222;
+  --input: #0f0f0f;
+  --ring: #333;
+  --card: #141414;
+  --card-foreground: #ffffff;
+  --popover: #1a1a1a;
+  --popover-foreground: #ffffff;
+
+  /* Segment decision colors */
+  --keep: #27AE60;
+  --cut: #E74C3C;
+  --trim: #F1C40F;
+  --rearrange: #3498DB;
+  --speed-up: #9B59B6;
+  --review: #E67E22;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-background-elevated: var(--background-elevated);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted-foreground-dim: var(--muted-foreground-dim);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-border-dim: var(--border-dim);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-keep: var(--keep);
+  --color-cut: var(--cut);
+  --color-trim: var(--trim);
+  --color-rearrange: var(--rearrange);
+  --color-speed-up: var(--speed-up);
+  --color-review: var(--review);
+  --animate-spin: spin 1s linear infinite;
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    padding: 0;
+  }
+}

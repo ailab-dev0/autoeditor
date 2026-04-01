@@ -1,56 +1,50 @@
-/**
- * SegmentCard — individual segment with approve/reject.
- * UXP: sp-button for actions, inline styles for dark theme.
- */
 import { h } from 'preact';
-import { selectedSegmentId } from '../signals';
-import { MARKER_COLORS } from '../protocol';
-import { ConfidenceRibbon } from './ConfidenceRibbon';
+import { MARKER_COLORS } from '../protocol.js';
 
-export function SegmentCard({ segment, approval, bus }) {
-  const isSelected = selectedSegmentId.value === segment.id;
-  const color = MARKER_COLORS[segment.suggestion] || MARKER_COLORS.review;
-  const startTime = (segment.start ?? segment.inPoint ?? 0).toFixed(1);
-  const endTime = (segment.end ?? segment.outPoint ?? 0).toFixed(1);
-  const label = segment.label || segment.explanation || segment.id;
-  const truncated = label.length > 50 ? label.slice(0, 47) + '...' : label;
+function formatTime(seconds) {
+  if (seconds == null) return '--:--';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
 
-  return (
-    <div
-      onClick={() => {
-        if (bus) bus.emit('segments:select', { segmentId: segment.id });
-      }}
-      style={`display:flex;flex-direction:row;align-items:center;gap:8px;padding:8px 10px;background:#2a2a2a;border-bottom:1px solid #333;border-left:3px solid ${isSelected ? '#4dabf7' : 'transparent'};cursor:pointer`}
-    >
-      <span style={`display:inline-block;width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0`} />
+export function SegmentCard({ segment, approval, userChoice, isSelected, onClick }) {
+  const isCut = segment.suggestion === 'cut';
+  const color = MARKER_COLORS[segment.suggestion] || '#666';
 
-      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
-        <span style="color:#e0e0e0;font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{truncated}</span>
-        <div style="display:flex;flex-direction:row;gap:8px;align-items:center">
-          <span style="color:#999;font-size:10px">{startTime}s - {endTime}s</span>
-          <span style={`color:${color};font-size:10px;font-weight:500`}>{segment.suggestion}</span>
-          <ConfidenceRibbon confidence={segment.confidence || 0} />
-        </div>
-      </div>
+  const emoji = userChoice === 'ai' ? '\u{1F916}' : userChoice === 'original' ? '\u{1F464}' : '';
 
-      <div style="display:flex;flex-direction:row;gap:4px;flex-shrink:0">
-        <sp-button
-          size="s"
-          variant={approval === 'approved' ? 'accent' : 'secondary'}
-          onClick={(e) => { e.stopPropagation(); bus.emit('segments:approve', { segmentId: segment.id }); }}
-          style="min-width:0;padding:2px 8px;font-size:11px"
-        >
-          {approval === 'approved' ? 'Approved' : 'Approve'}
-        </sp-button>
-        <sp-button
-          size="s"
-          variant={approval === 'rejected' ? 'negative' : 'secondary'}
-          onClick={(e) => { e.stopPropagation(); bus.emit('segments:reject', { segmentId: segment.id }); }}
-          style="min-width:0;padding:2px 8px;font-size:11px"
-        >
-          {approval === 'rejected' ? 'Rejected' : 'Reject'}
-        </sp-button>
-      </div>
-    </div>
+  const containerStyle = [
+    'display:flex;flex-direction:row;align-items:center;padding:8px 10px;cursor:pointer;gap:8px;transition:background 0.1s',
+    `border-left:${isSelected ? '3px solid #4dabf7' : '3px solid transparent'}`,
+    `background:${isSelected ? 'rgba(77,171,247,0.08)' : 'transparent'}`,
+    `opacity:${isCut ? '0.35' : '1'}`,
+  ].join(';');
+
+  return h('div', {
+    style: containerStyle,
+    onClick: () => onClick(segment.id),
+    onMouseEnter: (e) => { if (!isSelected) e.currentTarget.style.background = '#333'; },
+    onMouseLeave: (e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; },
+  },
+    // Left: colored dot
+    h('div', {
+      style: `width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0`
+    }),
+
+    // Middle: topic + time/role
+    h('div', { style: 'flex:1;min-width:0;overflow:hidden' },
+      h('div', {
+        style: `font-size:11px;font-weight:600;color:#e0e0e0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${isCut ? 'text-decoration:line-through' : ''}`
+      }, segment.topic || segment.suggestion),
+      h('div', { style: 'font-size:9px;color:#666;margin-top:1px;display:flex;gap:6px;align-items:center' },
+        h('span', null, formatTime(segment.start)),
+        segment.role && h('span', null, segment.role),
+        isCut && h('span', { style: 'color:#E74C3C' }, '\u2702 cut')
+      )
+    ),
+
+    // Right: decision emoji
+    emoji && h('div', { style: 'font-size:14px;flex-shrink:0' }, emoji)
   );
 }

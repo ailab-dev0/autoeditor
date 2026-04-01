@@ -7,10 +7,10 @@
 
 const VALID_EVENTS = Object.freeze([
   // shell
-  'shell:transitioned',
+  'shell:transitioned', 'shell:connecting', 'shell:reset',
   'health:check',
   'projects:fetch', 'projects:fetched',
-  'project:selected',
+  'project:selected', 'project:loaded',
 
   // auth
   'auth:login', 'auth:logged-in',
@@ -22,6 +22,7 @@ const VALID_EVENTS = Object.freeze([
   'pipeline:start', 'pipeline:started',
   'pipeline:complete', 'pipeline:cancelled',
   'pipeline:error',
+  'pipeline:go-media-select', 'pipeline:go-reviewing', 'pipeline:rerun',
 
   // segments
   'segments:fetch', 'segments:fetched',
@@ -33,6 +34,7 @@ const VALID_EVENTS = Object.freeze([
   // timeline
   'timeline:preview', 'timeline:previewed',
   'timeline:apply', 'timeline:applied',
+  'timeline:import',
   'timeline:rollback', 'timeline:rolled-back',
   'timeline:error',
 

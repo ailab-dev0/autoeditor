@@ -30,6 +30,22 @@ await safeEdit("Trim all clips", async (compoundAction, project) => {
 });
 ```
 
+## CRITICAL: lockedAccess is Synchronous
+
+The callback passed to lockedAccess() is synchronous — you cannot use await inside it.
+But executeTransaction's callback IS async. The correct nested pattern:
+
+```javascript
+await project.lockedAccess(() => {
+  // This outer callback is SYNC
+  project.executeTransaction(async (compoundAction) => {
+    // This inner callback IS async
+    await someAsyncSetup();
+    compoundAction.addAction(action);
+  }, "My Edit");
+});
+```
+
 ## Version-Safe API Access
 
 ```javascript
@@ -116,6 +132,22 @@ class ResilientWebSocket {
 }
 ```
 
+## Network Gotchas Quick Reference
+
+| Issue | Symptom | Fix |
+|-------|---------|-----|
+| requiredPermissions inside host array | All network calls silently fail | Move to manifest root level |
+| "domains": ["all"] (array) | Network denied | Use "domains": "all" (string) |
+| localhost in fetch | "Network request failed" on macOS | Use 127.0.0.1 |
+| 127.0.0.1 in WebSocket domain | Silent connection failure | Use localhost in manifest |
+| Missing ws:// in domains | WebSocket silently never connects | Add ws://localhost/ |
+| Self-signed HTTPS certs | "Network error" no detail | Use HTTP via localhost proxy |
+| response.blob() | Returns empty/undefined | Use response.arrayBuffer() then new Blob([buffer]) |
+| FormData file upload | Empty payload sent | Instantiate FormData inside upload function |
+| HTTP error (404/500) | Promise resolves (not rejects) | Check response.ok explicitly |
+| WebSocket onerror | Event object is {} | Cannot debug from error; verify server independently |
+| Manifest not reloaded | Old permissions cached | Full plugin unload/reload in UDT |
+
 ## Singleton State Management
 
 ```javascript
@@ -181,9 +213,9 @@ const clipData = clips.map(clip => ({
 }));
 ```
 
-## Cleanup Without hide/destroy
+## Cleanup Pattern for Premiere
 
-Since panel `hide()` and `destroy()` hooks are unreliable in Premiere:
+Since panel `hide()` and `destroy()` hooks are unreliable in Premiere, `plugin.destroy()` is the **only** reliable cleanup hook. Use it for all teardown:
 
 ```javascript
 entrypoints.setup({

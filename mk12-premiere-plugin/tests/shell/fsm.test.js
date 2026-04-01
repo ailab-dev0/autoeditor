@@ -68,8 +68,8 @@ describe('Shell FSM', () => {
   });
 
   describe('invalid transitions', () => {
-    it('throws on UNAUTHENTICATED → READY', () => {
-      expect(() => fsm.transition(STATES.READY)).toThrow('Invalid transition');
+    it('throws on UNAUTHENTICATED → WORKING', () => {
+      expect(() => fsm.transition(STATES.WORKING)).toThrow('Invalid transition');
     });
 
     it('throws on READY → APPLYING', () => {
@@ -92,7 +92,7 @@ describe('Shell FSM', () => {
     });
 
     it('returns false for invalid transitions', () => {
-      expect(fsm.canTransition(STATES.READY)).toBe(false);
+      expect(fsm.canTransition(STATES.WORKING)).toBe(false);
     });
   });
 

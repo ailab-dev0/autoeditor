@@ -1,0 +1,101 @@
+version: "3.9"
+
+services:
+  minio:
+    image: minio/minio
+    container_name: mk12-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - mk12-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  backend:
+    build:
+      context: ./mk12-backend
+      dockerfile: Dockerfile
+    container_name: mk12-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./mk12-backend/.env
+    environment:
+      PORT: 8000
+      HOST: "0.0.0.0"
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: editorlens
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - mk12-network
+    volumes:
+      - backend_logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  dashboard:
+    build:
+      context: ./mk12-dashboard
+      dockerfile: Dockerfile
+      args:
+        # IMPORTANT: Set to your WiFi IP so other devices can reach the backend
+        # The browser runs on the CLIENT device — it can't resolve Docker service names
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8000}
+    container_name: mk12-dashboard
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - mk12-network
+    restart: unless-stopped
+
+  animation:
+    build:
+      context: ./mk12-animation-engine
+      dockerfile: Dockerfile
+    container_name: mk12-animation-engine
+    ports:
+      - "4200:4200"
+    environment:
+      ANIMATION_PORT: 4200
+      BACKEND_URL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - animation_output:/app/out
+    networks:
+      - mk12-network
+    restart: unless-stopped
+
+networks:
+  mk12-network:
+    driver: bridge
+
+volumes:
+  minio_data:
+  backend_logs:
+  animation_output:

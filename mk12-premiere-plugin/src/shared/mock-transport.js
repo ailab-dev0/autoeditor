@@ -46,13 +46,20 @@ const MOCK_EDIT_PACKAGE = {
 };
 
 const MOCK_TRANSCRIPT = {
-  text: 'Welcome to this tutorial. Today we\'ll cover the fundamentals of video editing with EditorLens. '
-    + 'First, let\'s look at... um... the timeline. The timeline is where all your clips live. '
-    + 'You can drag clips around, trim them, and add transitions between them. '
-    + 'Now, this next part is important — or maybe not, I\'m not sure. Let me think about it.',
-  segments: MOCK_EDIT_PACKAGE.videos[0].segments.map(s => ({
-    id: s.id, start: s.start, end: s.end, text: `[Segment ${s.id}] speaking...`,
-  })),
+  text: '',
+  segments: [
+    { id: 'ts-1', start: 0, end: 4.2, text: 'Hey everyone, welcome back to the channel.' },
+    { id: 'ts-2', start: 4.2, end: 8.5, text: 'Today we\'re going to build a REST API from scratch using Node.js and Express.' },
+    { id: 'ts-3', start: 8.5, end: 15.0, text: 'By the end of this video, you\'ll have a fully working API with authentication, CRUD operations, and error handling.' },
+    { id: 'ts-4', start: 15.0, end: 18.3, text: 'Um... let me just pull up my editor here.' },
+    { id: 'ts-5', start: 18.3, end: 22.0, text: 'OK so... yeah, let\'s just skip that part actually.' },
+    { id: 'ts-6', start: 22.0, end: 28.7, text: 'Alright, so the first thing we need to do is set up our project structure.' },
+    { id: 'ts-7', start: 28.7, end: 35.2, text: 'I\'m going to create a new directory, run npm init, and install Express and a few other dependencies.' },
+    { id: 'ts-8', start: 35.2, end: 40.0, text: 'Let me walk you through the folder layout — we\'ll have routes, controllers, middleware, and models.' },
+    { id: 'ts-9', start: 40.0, end: 46.5, text: 'Now this next section is a bit tricky, and honestly I\'m not sure if I should cover it now or later.' },
+    { id: 'ts-10', start: 46.5, end: 52.0, text: 'Let\'s go with the authentication middleware first since everything depends on it.' },
+    { id: 'ts-11', start: 52.0, end: 55.0, text: 'We\'ll use JWT tokens for auth — I\'ll show you exactly how to set that up.' },
+  ],
 };
 
 const MOCK_STOCK_RESULTS = [
@@ -65,7 +72,7 @@ const MOCK_STOCK_RESULTS = [
 // ---------------------------------------------------------------------------
 // Route matcher
 // ---------------------------------------------------------------------------
-function matchRoute(method, path) {
+function matchRoute(method, path, body) {
   if (method === 'GET' && path === '/api/health') {
     return { status: 'ok', version: '2.0.0-mock' };
   }
@@ -77,11 +84,22 @@ function matchRoute(method, path) {
   }
   if (method === 'GET' && path === '/api/projects') {
     return [
-      { id: 'mock-1', name: 'Mock Project', description: 'A mock project for testing', created: '2026-03-30T00:00:00Z' },
+      { id: 'mock-1', name: 'How to Build a REST API', status: 'ready', created_at: '2026-03-28T14:22:00Z' },
+      { id: 'mock-2', name: 'React Hooks Deep Dive', status: 'ready', created_at: '2026-03-27T09:15:00Z' },
+      { id: 'mock-3', name: 'System Design Interview Prep', status: 'processing', created_at: '2026-03-30T08:00:00Z' },
+      { id: 'mock-4', name: 'Docker for Beginners', status: 'error', created_at: '2026-03-25T11:30:00Z' },
     ];
   }
-  if (method === 'GET' && path === '/api/projects/mock-1') {
-    return { id: 'mock-1', name: 'Mock Project', description: 'A mock project for testing', created: '2026-03-30T00:00:00Z' };
+  if (method === 'POST' && path === '/api/projects') {
+    const id = 'mock-' + Date.now();
+    return { project: { id, name: body?.name || 'Untitled', status: 'ready', created_at: new Date().toISOString() } };
+  }
+  if (method === 'GET' && path.startsWith('/api/projects/mock-')) {
+    const id = path.split('/')[3];
+    return { id, name: 'Mock Project', status: 'ready', created_at: '2026-03-28T14:22:00Z' };
+  }
+  if (method === 'PUT' && path.includes('/api/projects/')) {
+    return { ok: true };
   }
   if (method === 'POST' && path.endsWith('/pipeline/start')) {
     return { started: true, sessionId: 'mock-session-001' };
@@ -96,13 +114,33 @@ function matchRoute(method, path) {
     return MOCK_STOCK_RESULTS;
   }
   if (method === 'GET' && path.includes('/pipeline/status')) {
-    return { stage: 'complete', percent: 100 };
+    // Return in-progress so polling doesn't pre-empt the simulated WS completion
+    return { stage: 'analysis', percent: 45, status: 'running' };
   }
   if (method === 'POST' && path.includes('/generate-script')) {
     return { operations: [] };
   }
   if (method === 'GET' && path.includes('/knowledge')) {
-    return { concepts: [], relationships: [] };
+    return {
+      nodes: [
+        { id: 'rest-api', name: 'REST API', description: 'Representational State Transfer — architectural style for networked applications using HTTP methods (GET, POST, PUT, DELETE) to perform CRUD operations on resources.', type: 'concept', connections: 3 },
+        { id: 'express', name: 'Express.js', description: 'Minimal and flexible Node.js web framework providing robust features for building web and mobile applications. Handles routing, middleware, and HTTP utilities.', type: 'tool', connections: 2 },
+        { id: 'jwt', name: 'JWT Authentication', description: 'JSON Web Tokens — compact, URL-safe tokens for securely transmitting claims between parties. Used for stateless authentication in APIs.', type: 'concept', connections: 2 },
+        { id: 'middleware', name: 'Middleware Pattern', description: 'Functions that execute during the request-response cycle. Can modify request/response objects, end the cycle, or call the next middleware.', type: 'pattern', connections: 3 },
+        { id: 'crud', name: 'CRUD Operations', description: 'Create, Read, Update, Delete — the four basic operations for persistent storage. Maps to HTTP POST, GET, PUT/PATCH, DELETE.', type: 'concept', connections: 2 },
+        { id: 'error-handling', name: 'Error Handling', description: 'Strategies for catching, logging, and responding to errors gracefully. Includes try-catch, error middleware, and structured error responses.', type: 'pattern', connections: 1 },
+      ],
+      edges: [
+        { source: 'rest-api', target: 'express' },
+        { source: 'rest-api', target: 'crud' },
+        { source: 'rest-api', target: 'middleware' },
+        { source: 'express', target: 'middleware' },
+        { source: 'jwt', target: 'middleware' },
+        { source: 'jwt', target: 'rest-api' },
+        { source: 'crud', target: 'express' },
+        { source: 'error-handling', target: 'middleware' },
+      ],
+    };
   }
   if (method === 'POST' && path.includes('/export')) {
     return { exportId: 'mock-export-1', status: 'completed', output: 'mock-export-output.json' };
@@ -149,9 +187,9 @@ export function createMockTransport(bus) {
     return new Promise(r => setTimeout(r, ms));
   }
 
-  async function mockRequest(method, path) {
+  async function mockRequest(method, path, body) {
     await delay(150 + Math.random() * 100);
-    const data = matchRoute(method, path);
+    const data = matchRoute(method, path, body);
     return { ok: true, data, error: null };
   }
 
@@ -171,15 +209,16 @@ export function createMockTransport(bus) {
     get: (path) => mockRequest('GET', path),
 
     post: async (path, body) => {
-      const result = await mockRequest('POST', path);
-      // Trigger pipeline simulation when starting
+      const result = await mockRequest('POST', path, body);
       if (path.endsWith('/pipeline/start')) {
         simulatePipeline(bus);
       }
       return result;
     },
 
-    patch: (path, body) => mockRequest('PATCH', path),
+    put: (path, body) => mockRequest('PUT', path, body),
+
+    patch: (path, body) => mockRequest('PATCH', path, body),
 
     connectWs() {
       // Mock WS is handled by simulatePipeline via bus events

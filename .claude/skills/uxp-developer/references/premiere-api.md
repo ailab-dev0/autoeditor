@@ -51,6 +51,13 @@ await project.lockedAccess(() => {
   // read-only operations here — project state frozen
 });
 
+// CRITICAL: lockedAccess callback is SYNCHRONOUS (not async)
+// getTrackItems() and getMarkers() are also synchronous
+await project.lockedAccess(() => {
+  // synchronous reads only — no await inside
+  const seq = project.getActiveSequence(); // ERROR: can't await
+});
+
 // Lifecycle
 await project.save();
 await project.saveAs("/new/path.prproj");
@@ -332,6 +339,9 @@ editor.createRemoveItemsAction(trackItemSelection, ripple, shift)
 editor.insertMogrtFromPath(path, tickTime, videoTrack, audioTrack)
 editor.insertMogrtFromLibrary(libraryItem, tickTime, videoTrack, audioTrack)
 ppro.SequenceEditor.getInstalledMogrtPath()  // string
+
+// NOTE: insertMogrtFromPath is NOT action-based — it executes immediately
+// This is the exception to the action pattern
 ```
 
 ## TransitionFactory
@@ -378,6 +388,27 @@ const matchNames = await ppro.VideoFilterFactory.getVideoFilterMatchNames();
 const effect = ppro.VideoFilterFactory.createVideoFilter("some.match.name");
 ```
 
+## AudioFilterFactory
+
+```javascript
+// Audio effects
+const audioMatchNames = await ppro.AudioFilterFactory.getAudioFilterMatchNames();
+const audioEffect = ppro.AudioFilterFactory.createAudioFilterByDisplayName("DeNoise");
+// Apply via audioComponentChain.createInsertComponentAction()
+```
+
+## VideoFilterFactory Match Names
+
+```javascript
+// Common effect match names:
+// "PR.ADBE Gamma Correction"    — Lumetri-style color
+// "PR.ADBE Motion"              — Motion (built-in)
+// "PR.ADBE Opacity"             — Opacity (built-in)
+// "AE.ADBE Gaussian Blur 2"    — Gaussian Blur
+// "AE.ADBE Title"              — Legacy Title
+// Use getVideoFilterMatchNames() to discover available effects
+```
+
 ## Exporter & Encoding
 
 ```javascript
@@ -392,6 +423,17 @@ encoder.exportSequence(sequence, presetPath, exportType)
 
 // Export to other formats
 ppro.ProjectConverter // AAF, Final Cut Pro XML, OpenTimelineIO
+```
+
+## ProjectConverter
+
+```javascript
+// Open Timeline IO export
+await ppro.ProjectConverter.exportAsOpenTimelineIO(sequence, "/path/output.otio");
+
+// Other format converters
+await ppro.ProjectConverter.exportAsAAF(sequence, "/path/output.aaf");
+await ppro.ProjectConverter.exportAsFinalCutProXML(sequence, "/path/output.xml");
 ```
 
 ## Source Monitor
@@ -419,6 +461,12 @@ ppro.EventManager.addGlobalEventListener(
 // Constants.SequenceEvent — sequence-level events
 // Constants.SnapEvent — snapping events
 // Constants.OperationCompleteEvent — async operation completion
+
+// Per-object event listening (alternative to global)
+ppro.EventManager.addEventListener(project, "ProjectChanged", handler);
+ppro.EventManager.addEventListener(sequence, "SequenceChanged", handler);
+ppro.EventManager.addEventListener(track, "TrackChanged", handler);
+ppro.EventManager.addEventListener(encoder, "EncodeComplete", handler);
 ```
 
 ## Properties (Custom Metadata)

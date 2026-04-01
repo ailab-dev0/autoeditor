@@ -89,18 +89,69 @@ export function setupSegmentsAdapter(bus, transport) {
     inFlight.delete(segmentId);
   });
 
-  // Fetch segments from backend
+  // Fetch segments from blueprint (includes review decisions from dashboard)
   bus.on('segments:fetch', async ({ projectId }) => {
     if (!projectId) return;
+
+    // Try blueprint first — it has full segment data + userChoice from review
+    const bpResult = await transport.get(`/api/projects/${projectId}/blueprint`);
+    if (bpResult.ok && bpResult.data) {
+      const bp = bpResult.data.blueprint || bpResult.data;
+      const bpSegments = bp.segments || [];
+
+      if (bpSegments.length > 0) {
+        // Map blueprint segments to the format the plugin expects
+        const fetched = bpSegments.map(seg => ({
+          id: seg.segmentId,
+          start: seg.start ?? 0,
+          end: seg.end ?? 0,
+          videoPath: seg.mediaPath,
+          suggestion: seg.suggestion || 'review',
+          confidence: seg.confidence || 0,
+          explanation: seg.explanation || seg.aiPath?.reason || '',
+          topic: seg.topic || '',
+          role: seg.role || '',
+          importance: seg.importance || 0,
+          content_mark: seg.aiPath?.action !== 'keep_original' ? {
+            asset_type: seg.aiPath?.material?.type || seg.aiPath?.action,
+            search_query: seg.aiPath?.material?.source || seg.aiPath?.reason || '',
+          } : undefined,
+          transition_after: seg.aiPath?.transitionAfter || undefined,
+          handle_before: undefined,
+          handle_after: undefined,
+          userChoice: seg.userChoice,
+        }));
+
+        segments.value = fetched;
+
+        // Map userChoice to approval state — dashboard decisions carry over
+        const apps = {};
+        for (const seg of fetched) {
+          if (seg.userChoice === 'ai' || seg.userChoice === 'original' || seg.userChoice === 'custom') {
+            apps[seg.id] = 'approved';
+          } else {
+            apps[seg.id] = 'pending';
+          }
+        }
+        approvals.value = apps;
+        segmentsError.value = null;
+
+        bus.emit('segments:fetched', { count: fetched.length });
+        return;
+      }
+    }
+
+    // Fallback: fetch from marks
     const result = await transport.get(`/api/projects/${projectId}/marks`);
     if (result.ok && result.data) {
-      const fetched = Array.isArray(result.data) ? result.data : (result.data.segments || []);
+      const fetched = Array.isArray(result.data)
+        ? result.data
+        : (result.data.segments || result.data.marks || []);
       segments.value = fetched;
 
-      // Initialize approvals to pending (#2)
       const initial = {};
       for (const seg of fetched) {
-        initial[seg.id] = 'pending';
+        initial[seg.id || seg.segment_id] = 'pending';
       }
       approvals.value = initial;
       segmentsError.value = null;

@@ -1,0 +1,17 @@
+**/node_modules/
+**/.next/
+**/dist/
+*.ccx
+**/.env
+**/.env.local
+.DS_Store
+**/.DS_Store
+**/logs/
+*.log
+.next-localstorage*
+auto-editor/
+remotion/
+.beads/
+.memory/
+.superpowers/
+**/.next-localstorage*

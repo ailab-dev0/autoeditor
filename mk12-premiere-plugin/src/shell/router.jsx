@@ -8,13 +8,13 @@ import { shellState, STATES } from './fsm';
 import { LoginForm } from '../domains/auth/components/LoginForm.jsx';
 import { ServerConnect } from '../domains/auth/components/ServerConnect.jsx';
 import { ProjectSelector } from '../domains/auth/components/ProjectSelector.jsx';
+import { MediaSelector } from '../domains/pipeline/components/MediaSelector.jsx';
 import { ProgressPanel } from '../domains/pipeline/components/ProgressPanel.jsx';
 import { SegmentList } from '../domains/segments/components/SegmentList.jsx';
 import { ApplySummary } from '../domains/timeline/components/ApplySummary.jsx';
 import { StockBrowser } from '../domains/stock/components/StockBrowser.jsx';
 import { TranscriptView } from '../domains/transcript/components/TranscriptView.jsx';
 import { KnowledgeGraph } from '../domains/knowledge/components/KnowledgeGraph.jsx';
-import { ExportPanel } from '../domains/export/components/ExportPanel.jsx';
 
 /** Active tab in REVIEWING state */
 export const activeTab = signal('segments');
@@ -24,7 +24,6 @@ const REVIEW_TABS = [
   { id: 'stock', label: 'Stock' },
   { id: 'transcript', label: 'Transcript' },
   { id: 'knowledge', label: 'Knowledge' },
-  { id: 'export', label: 'Export' },
 ];
 
 function TabBar() {
@@ -59,7 +58,6 @@ function ReviewingView({ bus, projectId }) {
         {tab === 'stock' && <StockBrowser bus={bus} />}
         {tab === 'transcript' && <TranscriptView bus={bus} projectId={projectId} />}
         {tab === 'knowledge' && <KnowledgeGraph bus={bus} projectId={projectId} />}
-        {tab === 'export' && <ExportPanel bus={bus} projectId={projectId} />}
       </div>
     </div>
   );
@@ -69,12 +67,13 @@ const STATE_VIEWS = {
   [STATES.UNAUTHENTICATED]: LoginForm,
   [STATES.CONNECTING]: ServerConnect,
   [STATES.READY]: ProjectSelector,
+  [STATES.MEDIA_SELECT]: MediaSelector,
   [STATES.WORKING]: ProgressPanel,
   [STATES.REVIEWING]: ReviewingView,
   [STATES.APPLYING]: ApplySummary,
 };
 
-export function Router({ bus, projectId }) {
+export function Router({ bus, transport, projectId }) {
   const View = STATE_VIEWS[shellState.value];
-  return View ? <View bus={bus} projectId={projectId} /> : null;
+  return View ? <View bus={bus} transport={transport} projectId={projectId} /> : null;
 }

@@ -30,22 +30,19 @@ describe('SegmentList', () => {
     approvals.value = Object.fromEntries(segs.map(s => [s.id, 'pending']));
 
     const { container } = render(<SegmentList bus={bus} />);
-    // SegmentCard renders with ConfidenceRibbon which has percentage text
-    // Count by checking for Approve buttons (one per segment)
-    const approveButtons = container.querySelectorAll('sp-button');
-    // At minimum we should have Approve All + Reject All + per-segment buttons
-    expect(approveButtons.length).toBeGreaterThanOrEqual(5);
+    // Each SegmentCard renders a colored dot (10px circle) — JSDOM normalizes styles with spaces
+    const dots = container.querySelectorAll('div[style*="border-radius: 50%"][style*="width: 10px"]');
+    expect(dots.length).toBeGreaterThanOrEqual(5);
   });
 
-  it('renders filter buttons', () => {
+  it('renders filter pills', () => {
     segments.value = [];
     const { container } = render(<SegmentList bus={bus} />);
-    // Filter buttons are now divs with filter names
+    // Filter pills show: "All 0", "✓ 0", "⏳ 0", "✂ 0"
     expect(container.textContent).toContain('All');
-    expect(container.textContent).toContain('Approved');
-    expect(container.textContent).toContain('Rejected');
-    expect(container.textContent).toContain('Pending');
-    expect(container.textContent).toContain('Review');
+    expect(container.textContent).toContain('\u2713');
+    expect(container.textContent).toContain('\u23F3');
+    expect(container.textContent).toContain('\u2702');
   });
 
   it('segmentFilter signal controls displayed segments', () => {
@@ -55,13 +52,15 @@ describe('SegmentList', () => {
 
     segmentFilter.value = 'approved';
     const { container } = render(<SegmentList bus={bus} />);
-    // Only approved segment should have its Approve/Reject buttons
-    // The component should show fewer segments than total
-    expect(container.textContent).toContain('Segment 0');
-    expect(container.textContent).not.toContain('Segment 1');
+    // seg-0 has suggestion 'keep', so its card text includes 'keep'
+    expect(container.textContent).toContain('keep');
+    // seg-1 has suggestion 'cut' — should not appear in approved filter
+    // Only 1 segment card dot should be rendered (the approved one)
+    const dots = container.querySelectorAll('div[style*="border-radius: 50%"][style*="width: 10px"]');
+    expect(dots.length).toBe(1);
   });
 
-  it('shows stats summary', () => {
+  it('shows stats in filter pills and footer', () => {
     const segs = makeSegs(4);
     segments.value = segs;
     approvals.value = {
@@ -72,7 +71,11 @@ describe('SegmentList', () => {
     };
 
     const { container } = render(<SegmentList bus={bus} />);
-    expect(container.textContent).toContain('4 segments');
-    expect(container.textContent).toContain('2 approved');
+    // Filter pill shows "All 4"
+    expect(container.textContent).toContain('All 4');
+    // Filter pill shows "✓ 2" for 2 approved
+    expect(container.textContent).toContain('\u2713 2');
+    // Footer shows "Finalize & Export (3 reviewed)" — 2 approved + 1 rejected = 3
+    expect(container.textContent).toContain('Finalize & Export (3 reviewed)');
   });
 });
