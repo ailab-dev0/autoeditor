@@ -561,8 +561,17 @@ async function resolveMediaPath(mediaPath: string, tmpDir?: string): Promise<str
     const key = mediaPath.slice('minio://'.length);
     const { getFileStream } = await import('../services/storage-service.js');
     const tmpPath = `${dir}/mk12-media-${key.split('/').pop()}`;
-    const stream = await getFileStream(key);
-    await streamPipeline(stream, createWriteStream(tmpPath));
+    console.log(`[audio:resolve] Downloading from MinIO: ${key} → ${tmpPath}`);
+    try {
+      const stream = await getFileStream(key);
+      await streamPipeline(stream, createWriteStream(tmpPath));
+      const size = statSync(tmpPath).size;
+      console.log(`[audio:resolve] Downloaded: ${(size / 1024 / 1024).toFixed(1)} MB`);
+      if (size === 0) throw new Error('Downloaded file is empty');
+    } catch (err) {
+      console.error(`[audio:resolve] MinIO download failed for ${key}:`, (err as Error).message);
+      throw new Error(`Failed to download media from MinIO: ${key} — ${(err as Error).message}`);
+    }
     return tmpPath;
   }
 
