@@ -13,11 +13,10 @@ COPY tsconfig.json ./
 COPY next.config.js ./
 COPY postcss.config.mjs ./
 COPY src ./src
+COPY public ./public
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build-time API URL — uses runtime env override via next.config.js
-# In Docker: NEXT_PUBLIC_API_URL is set at container start, not build
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ARG NEXT_PUBLIC_WS_URL=ws://localhost:8000
 
@@ -27,14 +26,16 @@ RUN npm run build
 FROM node:22-slim AS runner
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy standalone output and static assets
-COPY --from=builder /app/public ./public 2>/dev/null || true
+# Copy public assets (created in builder even if empty)
+COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
