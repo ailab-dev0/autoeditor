@@ -104,6 +104,13 @@ if ! docker info &>/dev/null; then
   exit 1
 fi
 
+# Ensure .env exists
+if [ ! -f "$ROOT/mk12-backend/.env" ]; then
+  echo "⚠️  mk12-backend/.env not found — creating from .env.example"
+  cp "$ROOT/.env.example" "$ROOT/mk12-backend/.env"
+  echo "❗ Edit mk12-backend/.env with your API keys before running pipeline"
+fi
+
 # Detect compose command
 if docker compose version &>/dev/null; then
   COMPOSE="docker compose"
