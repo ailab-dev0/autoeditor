@@ -93,8 +93,8 @@ export const config: Config = {
 
   // Tool paths (auto-detected on this system)
   autoEditorPath: env('AUTO_EDITOR_PATH', 'auto-editor'),
-  ffmpegPath: env('FFMPEG_PATH', '/opt/homebrew/bin/ffmpeg'),
-  ffprobePath: env('FFPROBE_PATH', '/opt/homebrew/bin/ffprobe'),
+  ffmpegPath: env('FFMPEG_PATH', 'ffmpeg'),
+  ffprobePath: env('FFPROBE_PATH', 'ffprobe'),
 
   // OpenRouter for AI analysis (loaded from env or ANA plugin)
   openrouterApiKey: loadOpenRouterKey(),
