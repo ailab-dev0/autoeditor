@@ -34,6 +34,8 @@ services:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
       MINIO_BUCKET: editorlens
+      FFMPEG_PATH: ffmpeg
+      FFPROBE_PATH: ffprobe
     depends_on:
       minio:
         condition: service_healthy
