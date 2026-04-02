@@ -2,13 +2,14 @@
 
 import { use, useState, useMemo, useEffect } from "react";
 import { Download, Loader2, Search } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { TranscriptViewer } from "@/components/transcript/TranscriptViewer";
 import { useTranscript, transcriptKeys } from "@/hooks/use-transcript";
 import { useVideoSync } from "@/hooks/use-video-sync";
 import { useWebSocketSubscribe } from "@/hooks/use-websocket";
+import { apiClient } from "@/lib/api-client";
 
 export default function TranscriptPage({
   params,
@@ -22,6 +23,20 @@ export default function TranscriptPage({
   const { subscribe } = useWebSocketSubscribe();
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Get approved segment IDs from blueprint
+  const { data: blueprintData } = useQuery({
+    queryKey: ["blueprint", projectId],
+    queryFn: () => apiClient.blueprint.get(projectId),
+    enabled: !!projectId,
+  });
+  const approvedSegmentIds = useMemo(() => {
+    const segs = blueprintData?.blueprint?.segments ?? [];
+    return new Set(
+      segs.filter(s => s.userChoice === "ai" || s.userChoice === "original" || s.userChoice === "custom")
+        .map(s => s.segmentId)
+    );
+  }, [blueprintData]);
+
   // Re-fetch transcript when backend pushes an update via WebSocket
   useEffect(() => {
     if (!projectId) return;
@@ -31,16 +46,22 @@ export default function TranscriptPage({
     return unsub;
   }, [projectId, subscribe, queryClient]);
 
-  // Filter segments that match the search query
+  // Filter: only approved segments, then apply search
   const filteredSegments = useMemo(() => {
-    const segs = transcript?.segments ?? [];
+    let segs = transcript?.segments ?? [];
+
+    // Only show segments that have been approved in the Review section
+    if (approvedSegmentIds.size > 0) {
+      segs = segs.filter(seg => approvedSegmentIds.has(seg.id));
+    }
+
     if (!searchQuery.trim()) return segs;
     const q = searchQuery.toLowerCase();
     return segs.filter(seg =>
       seg.text.toLowerCase().includes(q) ||
       (seg.speaker && seg.speaker.toLowerCase().includes(q))
     );
-  }, [transcript?.segments, searchQuery]);
+  }, [transcript?.segments, searchQuery, approvedSegmentIds]);
 
   if (isLoading) {
     return (

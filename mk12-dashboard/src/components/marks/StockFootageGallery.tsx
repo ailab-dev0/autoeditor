@@ -143,11 +143,24 @@ function ThumbnailCard({ result, selected, onToggle }: ThumbnailCardProps) {
         </div>
       </div>
 
-      {/* Description */}
+      {/* Description + Download */}
       <div className="p-2">
-        <p className="line-clamp-1 text-left text-xs text-muted-foreground">
-          {result.description}
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="line-clamp-1 text-left text-xs text-muted-foreground flex-1">
+            {result.description}
+          </p>
+          <a
+            href={result.downloadUrl}
+            download
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="ml-1 shrink-0 rounded p-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            title="Download"
+          >
+            <Download className="size-3.5" />
+          </a>
+        </div>
         {result.tags.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
             {result.tags.slice(0, 3).map((tag) => (
@@ -297,19 +310,6 @@ export function StockFootageGallery({
               {selectedIds.size} selected
             </span>
           )}
-          <button
-            type="button"
-            onClick={() => generateMutation.mutate()}
-            disabled={generateMutation.isPending}
-            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-accent disabled:opacity-50"
-          >
-            {generateMutation.isPending ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="size-3.5" />
-            )}
-            Generate Suggestions
-          </button>
         </div>
       </div>
 

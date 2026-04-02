@@ -450,10 +450,24 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
                 </div>
               )}
 
-              <div className="p-3 rounded bg-zinc-800/50 border border-zinc-700">
+              <div className="p-3 rounded bg-zinc-800/50 border border-zinc-700 mb-4">
                 <p className="text-xs text-zinc-500 mb-1">AI Analysis</p>
                 <p className="text-sm text-zinc-300">{selected.explanation}</p>
               </div>
+
+              {/* Mark for review */}
+              {selected.suggestion !== "review" && (
+                <button
+                  onClick={() => {
+                    choiceMutation.mutate({ segId: selected.segmentId, choice: "custom", notes: "Flagged for review" });
+                    setFilter("needs_review");
+                  }}
+                  className="flex items-center gap-1.5 text-[11px] text-yellow-500 hover:text-yellow-400 transition-colors"
+                >
+                  <AlertTriangle className="w-3 h-3" />
+                  Mark for review
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -491,9 +505,6 @@ function MaterialPreview({
     );
   }
 
-  return (
-    <div className="w-full h-32 bg-zinc-900 rounded mb-3 flex items-center justify-center">
-      <Film className="w-8 h-8 text-zinc-700" />
-    </div>
-  );
+  // No material and no preview — don't show empty placeholder
+  return null;
 }

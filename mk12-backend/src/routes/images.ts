@@ -40,6 +40,16 @@ export async function registerImageRoutes(app: FastifyInstance): Promise<void> {
         aspectRatio: body.aspectRatio,
       });
 
+      // Record image generation cost
+      const { recordCost } = await import('../services/cost-service.js');
+      recordCost({
+        projectId: id,
+        service: 'fal',
+        operation: 'image_generation',
+        model: body.model ?? 'flux',
+        metadata: { prompt: body.prompt.trim().slice(0, 100), width: image.width, height: image.height },
+      });
+
       return reply.send({ image });
     } catch (err) {
       const message = (err as Error).message;
@@ -76,6 +86,15 @@ export async function registerImageRoutes(app: FastifyInstance): Promise<void> {
         width: body?.width,
         height: body?.height,
         aspectRatio: body?.aspectRatio,
+      });
+
+      const { recordCost } = await import('../services/cost-service.js');
+      recordCost({
+        projectId: id,
+        service: 'fal',
+        operation: 'image_generation',
+        model: body?.model ?? 'flux',
+        metadata: { segmentId: segId, width: image.width, height: image.height },
       });
 
       return reply.send({ image });

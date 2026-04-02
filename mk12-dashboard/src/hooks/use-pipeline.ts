@@ -36,8 +36,9 @@ export function usePipeline(projectId: string) {
     queryKey: pipelineKeys.status(projectId),
     queryFn: () => apiClient.pipeline.status(projectId),
     enabled: !!projectId,
+    // Poll when SSE is not connected: 5s for fallback, 10s to detect pipeline start
     refetchInterval:
-      sseStatus === "connected" ? false : isPollFallback ? 5000 : false,
+      sseStatus === "connected" ? false : isPollFallback ? 5000 : 10000,
   });
 
   // Connect SSE with token-aware reconnect

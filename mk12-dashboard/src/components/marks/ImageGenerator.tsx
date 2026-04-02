@@ -33,9 +33,7 @@ interface ImageGeneratorProps {
 // ─── Model options ───────────────────────────────────────────────────────────
 
 const MODEL_OPTIONS: { value: ImageModel; label: string; description: string }[] = [
-  { value: "flux", label: "Flux", description: "Fast, high quality" },
-  { value: "flux-pro", label: "Flux Pro", description: "Highest quality" },
-  { value: "stable-diffusion", label: "Stable Diffusion 3.5", description: "Versatile" },
+  { value: "flux", label: "Nano Banana Pro", description: "Fast, high quality" },
 ];
 
 const ASPECT_OPTIONS: { value: AspectRatio; label: string }[] = [
@@ -201,7 +199,7 @@ export function ImageGenerator({
           <h4 className="text-xs font-medium text-muted-foreground">
             Previous Generations ({segmentImages.length})
           </h4>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {segmentImages.map((img) => (
               <GeneratedImageCard key={img.id} image={img} compact />
             ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import type { KnowledgeNode, KnowledgeEdge } from "@/lib/types";
 
@@ -32,101 +32,73 @@ export function KnowledgeGraph({
 
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
 
-    // Simple force-directed layout using requestAnimationFrame
-    // For production, integrate d3-force properly
-    const nodePositions = new Map<string, { x: number; y: number; vx: number; vy: number }>();
-
-    // Initialize positions
-    nodes.forEach((node, i) => {
-      const angle = (2 * Math.PI * i) / nodes.length;
-      const radius = Math.min(width, height) * 0.35;
-      nodePositions.set(node.id, {
-        x: node.x ?? width / 2 + radius * Math.cos(angle),
-        y: node.y ?? height / 2 + radius * Math.sin(angle),
-        vx: 0,
-        vy: 0,
-      });
+    // Build adjacency for tree layout
+    const children = new Map<string, string[]>();
+    const hasParent = new Set<string>();
+    edges.forEach((e) => {
+      if (!children.has(e.source)) children.set(e.source, []);
+      children.get(e.source)!.push(e.target);
+      hasParent.add(e.target);
     });
 
-    // Build edge index
-    const edgeIndex = new Map<string, Set<string>>();
-    edges.forEach((edge) => {
-      if (!edgeIndex.has(edge.source)) edgeIndex.set(edge.source, new Set());
-      if (!edgeIndex.has(edge.target)) edgeIndex.set(edge.target, new Set());
-      edgeIndex.get(edge.source)!.add(edge.target);
-      edgeIndex.get(edge.target)!.add(edge.source);
-    });
+    // Find roots (nodes with no incoming edges) — sorted by importance
+    const sorted = [...nodes].sort((a, b) => b.importance - a.importance);
+    const roots = sorted.filter(n => !hasParent.has(n.id));
+    if (roots.length === 0) roots.push(sorted[0]); // fallback
 
-    // Simple simulation (runs for a fixed number of iterations)
-    const iterations = 50;
-    for (let iter = 0; iter < iterations; iter++) {
-      const alpha = 1 - iter / iterations;
+    // Tree layout — assign positions level by level
+    const positions = new Map<string, { x: number; y: number }>();
+    const visited = new Set<string>();
+    const levelWidth = 160;
+    const nodeSpacing = 60;
 
-      // Repulsion between all nodes
-      const nodeArray = Array.from(nodePositions.entries());
-      for (let i = 0; i < nodeArray.length; i++) {
-        for (let j = i + 1; j < nodeArray.length; j++) {
-          const [, a] = nodeArray[i];
-          const [, b] = nodeArray[j];
-          const dx = b.x - a.x;
-          const dy = b.y - a.y;
-          const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-          const force = (200 * alpha) / (dist * dist);
-          const fx = (dx / dist) * force;
-          const fy = (dy / dist) * force;
-          a.vx -= fx;
-          a.vy -= fy;
-          b.vx += fx;
-          b.vy += fy;
-        }
+    let globalY = 40;
+
+    function layoutSubtree(nodeId: string, depth: number) {
+      if (visited.has(nodeId)) return;
+      visited.add(nodeId);
+
+      const x = 80 + depth * levelWidth;
+      const y = globalY;
+      positions.set(nodeId, { x, y });
+      globalY += nodeSpacing;
+
+      const kids = children.get(nodeId) || [];
+      for (const kid of kids) {
+        layoutSubtree(kid, depth + 1);
       }
-
-      // Attraction along edges
-      edges.forEach((edge) => {
-        const source = nodePositions.get(edge.source);
-        const target = nodePositions.get(edge.target);
-        if (!source || !target) return;
-        const dx = target.x - source.x;
-        const dy = target.y - source.y;
-        const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-        const force = (dist - 100) * 0.01 * alpha;
-        const fx = (dx / dist) * force;
-        const fy = (dy / dist) * force;
-        source.vx += fx;
-        source.vy += fy;
-        target.vx -= fx;
-        target.vy -= fy;
-      });
-
-      // Center gravity
-      nodeArray.forEach(([, pos]) => {
-        pos.vx += (width / 2 - pos.x) * 0.001 * alpha;
-        pos.vy += (height / 2 - pos.y) * 0.001 * alpha;
-      });
-
-      // Apply velocities with damping
-      nodeArray.forEach(([, pos]) => {
-        pos.x += pos.vx * 0.5;
-        pos.y += pos.vy * 0.5;
-        pos.vx *= 0.9;
-        pos.vy *= 0.9;
-        // Clamp to viewport
-        pos.x = Math.max(30, Math.min(width - 30, pos.x));
-        pos.y = Math.max(30, Math.min(height - 30, pos.y));
-      });
     }
 
-    // Render
-    renderGraph(svg, nodes, edges, nodePositions, selectedNodeId, onNodeClick);
+    for (const root of roots) {
+      layoutSubtree(root.id, 0);
+    }
+
+    // Layout orphan nodes (no edges)
+    for (const node of sorted) {
+      if (!visited.has(node.id)) {
+        positions.set(node.id, { x: 80, y: globalY });
+        globalY += nodeSpacing;
+      }
+    }
+
+    // Scale to fit viewport
+    const maxX = Math.max(...Array.from(positions.values()).map(p => p.x)) + 80;
+    const maxY = Math.max(...Array.from(positions.values()).map(p => p.y)) + 40;
+    const scaleX = maxX > width ? width / maxX : 1;
+    const scaleY = maxY > height ? height / maxY : 1;
+    const scale = Math.min(scaleX, scaleY, 1);
+
+    for (const [id, pos] of positions) {
+      pos.x = pos.x * scale + (width - maxX * scale) / 2;
+      pos.y = pos.y * scale + 20;
+    }
+
+    renderGraph(svg, nodes, edges, positions, selectedNodeId, onNodeClick);
   }, [nodes, edges, selectedNodeId, onNodeClick]);
 
   return (
     <div ref={containerRef} className={cn("relative w-full h-full min-h-[400px]", className)}>
-      <svg
-        ref={svgRef}
-        className="w-full h-full"
-        style={{ background: "transparent" }}
-      />
+      <svg ref={svgRef} className="w-full h-full" style={{ background: "transparent" }} />
     </div>
   );
 }
@@ -139,27 +111,42 @@ function renderGraph(
   selectedNodeId?: string,
   onNodeClick?: (id: string) => void,
 ) {
-  // Clear
   while (svg.firstChild) svg.removeChild(svg.firstChild);
-
   const ns = "http://www.w3.org/2000/svg";
 
-  // Edges
+  // Edges as curved paths (tree branches)
   edges.forEach((edge) => {
     const source = positions.get(edge.source);
     const target = positions.get(edge.target);
     if (!source || !target) return;
 
-    const line = document.createElementNS(ns, "line");
-    line.setAttribute("x1", String(source.x));
-    line.setAttribute("y1", String(source.y));
-    line.setAttribute("x2", String(target.x));
-    line.setAttribute("y2", String(target.y));
-    line.setAttribute("stroke", "#333");
-    line.setAttribute("stroke-width", String(Math.max(0.5, edge.weight * 2)));
-    line.setAttribute("stroke-opacity", "0.4");
-    svg.appendChild(line);
+    const midX = (source.x + target.x) / 2;
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("d", `M ${source.x} ${source.y} C ${midX} ${source.y}, ${midX} ${target.y}, ${target.x} ${target.y}`);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "#444");
+    path.setAttribute("stroke-width", String(Math.max(0.5, edge.weight)));
+    path.setAttribute("stroke-opacity", "0.5");
+    svg.appendChild(path);
   });
+
+  // Label collision avoidance — track occupied label regions
+  const labelRects: Array<{ x: number; y: number; w: number; h: number }> = [];
+
+  function findLabelY(x: number, baseY: number, labelW: number): number {
+    const h = 14;
+    let y = baseY;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const overlap = labelRects.some(r =>
+        x - labelW / 2 < r.x + r.w && x + labelW / 2 > r.x &&
+        y - h < r.y + r.h && y + h > r.y
+      );
+      if (!overlap) break;
+      y += 16; // shift down
+    }
+    labelRects.push({ x: x - labelW / 2, y: y - h, w: labelW, h: h * 2 });
+    return y;
+  }
 
   // Nodes
   nodes.forEach((node) => {
@@ -167,7 +154,7 @@ function renderGraph(
     if (!pos) return;
 
     const isSelected = node.id === selectedNodeId;
-    const radius = 6 + node.importance * 14;
+    const radius = 5 + node.importance * 12;
 
     const g = document.createElementNS(ns, "g");
     g.style.cursor = "pointer";
@@ -184,18 +171,21 @@ function renderGraph(
     circle.setAttribute("stroke-width", isSelected ? "2" : "1");
     g.appendChild(circle);
 
-    // Label
-    if (node.importance > 0.3 || isSelected) {
-      const text = document.createElementNS(ns, "text");
-      text.setAttribute("x", String(pos.x));
-      text.setAttribute("y", String(pos.y + radius + 14));
-      text.setAttribute("text-anchor", "middle");
-      text.setAttribute("fill", "#ccc");
-      text.setAttribute("font-size", "11");
-      text.setAttribute("font-family", "Inter, sans-serif");
-      text.textContent = node.label;
-      g.appendChild(text);
-    }
+    // Label — truncate long names, avoid overlaps
+    const maxLabelLen = 25;
+    const label = node.label.length > maxLabelLen ? node.label.slice(0, maxLabelLen) + "…" : node.label;
+    const estimatedWidth = label.length * 6;
+    const labelY = findLabelY(pos.x, pos.y + radius + 14, estimatedWidth);
+
+    const text = document.createElementNS(ns, "text");
+    text.setAttribute("x", String(pos.x));
+    text.setAttribute("y", String(labelY));
+    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("fill", isSelected ? "#fff" : "#aaa");
+    text.setAttribute("font-size", "10");
+    text.setAttribute("font-family", "Inter, system-ui, sans-serif");
+    text.textContent = label;
+    g.appendChild(text);
 
     svg.appendChild(g);
   });
