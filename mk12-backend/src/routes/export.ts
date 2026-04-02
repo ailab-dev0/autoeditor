@@ -58,6 +58,15 @@ export async function registerExportRoutes(app: FastifyInstance): Promise<void> 
         for await (const chunk of metaStream) metaChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
         const meta = JSON.parse(Buffer.concat(metaChunks).toString('utf8'));
 
+        // Load blueprint segments for actual decisions
+        let blueprintSegments: any[] = [];
+        try {
+          const bpStream = await getFileStream(`projects/${id}/blueprint-segments.jsonl`);
+          const bpChunks: Buffer[] = [];
+          for await (const chunk of bpStream) bpChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+          blueprintSegments = Buffer.concat(bpChunks).toString('utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l));
+        } catch { /* no blueprint yet */ }
+
         const chapters = (meta.chapters ?? []).map((ch: any, i: number) => ({
           name: ch.name ?? `Chapter ${i + 1}`,
           order: ch.order ?? i,
@@ -69,10 +78,48 @@ export async function registerExportRoutes(app: FastifyInstance): Promise<void> 
           importance: (t.importance ?? 0) / 5, community: i % 5,
         }));
 
+        // Build segments with actual decisions for export
+        const segments = blueprintSegments.map((seg: any) => ({
+          id: seg.segmentId,
+          start: seg.start ?? 0,
+          end: seg.end ?? 0,
+          suggestion: seg.suggestion ?? 'keep',
+          confidence: seg.confidence ?? 0,
+          explanation: seg.explanation ?? '',
+          chapter: seg.topic,
+          transcript: seg.text,
+          content_mark: seg.aiPath?.action !== 'keep_original' ? {
+            asset_type: seg.aiPath?.material?.type ?? seg.aiPath?.action,
+            search_query: seg.topic || seg.aiPath?.reason || '',
+          } : undefined,
+        }));
+
+        // Group segments by video path
+        const videoPathMap = new Map<string, any[]>();
+        for (const seg of blueprintSegments) {
+          const path = seg.mediaPath || 'unknown';
+          if (!videoPathMap.has(path)) videoPathMap.set(path, []);
+          videoPathMap.get(path)!.push(seg);
+        }
+
+        const videos = Array.from(videoPathMap.entries()).map(([path, segs]) => ({
+          video_path: path,
+          segments: segs.map((seg: any) => ({
+            id: seg.segmentId,
+            start: seg.start ?? 0,
+            end: seg.end ?? 0,
+            suggestion: seg.suggestion ?? 'keep',
+            confidence: seg.confidence ?? 0,
+            explanation: seg.explanation ?? seg.aiPath?.reason ?? '',
+            chapter: seg.topic,
+            transcript: seg.text,
+          })),
+        }));
+
         editPackage = buildEditPackage({
           projectName: project.name,
           sessionId: 'export',
-          videos: [],
+          videos,
           chapters,
           nodes,
           edges: [],

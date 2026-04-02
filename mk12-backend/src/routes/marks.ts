@@ -61,19 +61,43 @@ export async function registerMarksRoutes(app: FastifyInstance): Promise<void> {
 
       const marks = lines
         .map(line => JSON.parse(line))
-        .filter((seg: any) => seg.aiPath?.material || seg.aiPath?.action !== 'keep_original')
-        .map((seg: any) => ({
-          segment_id: seg.segmentId,
-          start: seg.start,
-          end: seg.end,
-          topic: seg.topic,
-          content_mark: {
-            asset_type: seg.aiPath?.material?.type ?? seg.aiPath?.action ?? 'stock_video',
-            search_query: seg.aiPath?.material?.source ?? seg.aiPath?.reason ?? '',
-            notes: seg.aiPath?.reason,
-          },
-          material: seg.aiPath?.material ?? null,
-        }));
+        .filter((seg: any) => seg.aiPath?.action !== 'keep_original')
+        .map((seg: any) => {
+          const topic = seg.topic || '';
+          const text = (seg.text || '').slice(0, 100);
+          const action = seg.aiPath?.action || 'keep_original';
+
+          let searchQuery = '';
+          let assetType = 'stock_video';
+
+          if (action === 'add_text') {
+            assetType = 'text_overlay';
+            searchQuery = `Text overlay: "${topic}"`;
+          } else if (action === 'add_overlay' || action === 'replace_footage') {
+            assetType = 'stock_video';
+            searchQuery = topic || text || 'b-roll footage';
+          } else if (action === 'add_animation') {
+            assetType = 'animation';
+            searchQuery = `Animated explainer: ${topic}`;
+          }
+
+          return {
+            segment_id: seg.segmentId,
+            start: seg.start,
+            end: seg.end,
+            topic,
+            text,
+            role: seg.role || '',
+            suggestion: seg.suggestion,
+            action,
+            content_mark: {
+              asset_type: assetType,
+              search_query: searchQuery,
+              notes: seg.explanation || seg.aiPath?.reason || '',
+            },
+            material: seg.aiPath?.material ?? null,
+          };
+        });
 
       return reply.send({ marks });
     } catch {
