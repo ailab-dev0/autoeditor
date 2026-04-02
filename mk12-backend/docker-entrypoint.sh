@@ -5,17 +5,27 @@
 
 set -e
 
-# ── Load .env file if it exists (supports mounting or manual copy) ──
-if [ -f /app/.env ]; then
-  echo "[entrypoint] Loading .env file..."
-  export $(grep -v '^#' /app/.env | grep -v '^\s*$' | xargs)
-fi
+# ── Load .env file if it exists ──
+# IMPORTANT: only set vars that aren't already set by Docker Compose
+# Docker Compose `environment:` takes precedence over .env file
+load_env_file() {
+  local envfile="$1"
+  if [ ! -f "$envfile" ]; then return; fi
+  echo "[entrypoint] Loading $envfile..."
+  while IFS='=' read -r key value; do
+    # Skip comments and empty lines
+    case "$key" in '#'*|'') continue ;; esac
+    # Remove surrounding quotes from value
+    value=$(echo "$value" | sed "s/^['\"]//;s/['\"]$//")
+    # Only set if not already set (Docker Compose environment: takes priority)
+    if [ -z "$(eval echo \$$key)" ]; then
+      export "$key=$value"
+    fi
+  done < "$envfile"
+}
 
-# Also check common mount points
-if [ -f /config/.env ]; then
-  echo "[entrypoint] Loading /config/.env..."
-  export $(grep -v '^#' /config/.env | grep -v '^\s*$' | xargs)
-fi
+load_env_file /app/.env
+load_env_file /config/.env
 
 # ── Validate required vars ──
 MISSING=""
