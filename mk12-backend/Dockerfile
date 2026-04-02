@@ -17,7 +17,8 @@ COPY package.json package-lock.json ./
 COPY tsconfig.json ./
 COPY src ./src
 COPY tests ./tests
-COPY .env* ./
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
 
 RUN mkdir -p logs /tmp
 
@@ -29,4 +30,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=5s --retries=3 --start-period=10s \
     CMD curl -f http://localhost:8000/api/health || exit 1
 
-CMD ["npx", "tsx", "src/server.ts"]
+ENTRYPOINT ["./docker-entrypoint.sh"]

@@ -27,9 +27,6 @@ services:
     container_name: mk12-backend
     ports:
       - "8000:8000"
-    env_file:
-      - path: ./mk12-backend/.env
-        required: false
     environment:
       PORT: 8000
       HOST: "0.0.0.0"
@@ -44,6 +41,12 @@ services:
       - mk12-network
     volumes:
       - backend_logs:/app/logs
+      # Mount .env — edit mk12-backend/.env and restart, no rebuild needed
+      # If .env doesn't exist, create it first: cp .env.example mk12-backend/.env
+      - type: bind
+        source: ./mk12-backend/.env
+        target: /app/.env
+        read_only: true
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
