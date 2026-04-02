@@ -1,6 +1,5 @@
-# EditorLens MK-12 — What It Actually Does
+# EditorLens MK-12 — User Guide
 
-> Tested and verified on Docker across two machines over WiFi. 
 > This document only states what works. No fluff.
 
 ---
@@ -13,38 +12,23 @@ It does NOT edit videos. It produces edit decisions that a human editor imports 
 
 ---
 
-## Setup (Any Machine)
+## Starting the Tool
 
-**Requirements**: Docker Desktop, internet connection (for AI APIs)
-
-```bash
-git clone https://github.com/ailab-dev0/autoeditor.git
-cd autoeditor
-./scripts/setup.sh
-```
-
-Setup will:
-1. Check Docker is installed and running
-2. Create `mk12-backend/.env` from `.env.example`
-3. Ask you to fill in API keys
-4. Detect your WiFi IP
-5. Build Docker images
-
-**Required API keys** (without these, nothing works):
-- `DATABASE_URL` — Postgres connection (we use Neon serverless)
-- `OPENROUTER_API_KEY` — Claude AI for content analysis
-- `ASSEMBLYAI_API_KEY` — Speech-to-text transcription
-
-**Optional**:
-- `PEXELS_API_KEY` — Stock footage search (free)
-- `FAL_KEY` — AI image generation ($0.03/image)
+The tool is already installed. Open Terminal and run:
 
 ```bash
-./scripts/start.sh    # starts everything
-./scripts/stop.sh     # stops everything
+cd ~/Documents/editorlensmk12/autoeditor
+./scripts/start.sh
 ```
 
-After start, open `http://[your-ip]:3000` in any browser on the same WiFi.
+Wait for all 4 services to show green. Then open the URL shown in the terminal — something like `http://10.10.x.x:3000` — in your browser.
+
+To stop:
+```bash
+./scripts/stop.sh
+```
+
+If you get errors about Docker not running, open **Docker Desktop** first, wait for it to start, then run `./scripts/start.sh` again.
 
 ---
 
