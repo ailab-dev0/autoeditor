@@ -37,14 +37,13 @@ export default function NewProjectPage() {
 
       setError("");
 
-      const filePaths = videos.map((v) => v.value);
-
+      // Don't send videoPaths here — files are uploaded on the Upload page
+      // The VideoUploadZone only captures file names for display; actual upload happens via MinIO
       createProject.mutate(
         {
           name: name.trim(),
           description: description.trim() || undefined,
           brief: brief.trim() || undefined,
-          videoPaths: filePaths.length > 0 ? filePaths : undefined,
           fps,
           resolution: { width: resWidth, height: resHeight },
           tags: tags.length > 0 ? tags : undefined,
