@@ -1,17 +1,41 @@
+# ── Dependencies ──
 **/node_modules/
+
+# ── Build output ──
 **/.next/
 **/dist/
 *.ccx
+
+# ── Environment & secrets (NEVER commit) ──
 **/.env
 **/.env.local
+**/.env.production
+**/.env.staging
+**/.env.*.local
+!.env.example
+
+# ── OS files ──
 .DS_Store
 **/.DS_Store
+Thumbs.db
+
+# ── Logs ──
 **/logs/
 *.log
+
+# ── IDE ──
+.vscode/
+.idea/
+
+# ── Local storage ──
 .next-localstorage*
+**/.next-localstorage*
+
+# ── External repos ──
 auto-editor/
 remotion/
+
+# ── Tool caches ──
 .beads/
 .memory/
 .superpowers/
-**/.next-localstorage*
