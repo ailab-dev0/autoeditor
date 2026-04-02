@@ -40,6 +40,27 @@ export function isStorageConfigured(): boolean {
   return !!(config.minioEndpoint && config.minioAccessKey && config.minioSecretKey);
 }
 
+let _bucketChecked = false;
+
+/** Ensure the bucket exists, create if not. Called once on first upload. */
+async function ensureBucket(): Promise<void> {
+  if (_bucketChecked) return;
+  const s3 = getStorageClient();
+  try {
+    const { HeadBucketCommand } = await import('@aws-sdk/client-s3');
+    await s3.send(new HeadBucketCommand({ Bucket: BUCKET }));
+  } catch {
+    try {
+      const { CreateBucketCommand } = await import('@aws-sdk/client-s3');
+      await s3.send(new CreateBucketCommand({ Bucket: BUCKET }));
+      console.log(`[storage] Created bucket: ${BUCKET}`);
+    } catch (err) {
+      console.warn(`[storage] Bucket check/create failed:`, (err as Error).message);
+    }
+  }
+  _bucketChecked = true;
+}
+
 /**
  * Upload a file buffer to storage.
  * Returns the object key.
@@ -49,6 +70,7 @@ export async function uploadFile(
   body: Buffer | Readable,
   contentType: string,
 ): Promise<string> {
+  await ensureBucket();
   const s3 = getStorageClient();
 
   // For streams (potentially large files), use multipart upload

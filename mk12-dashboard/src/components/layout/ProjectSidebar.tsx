@@ -19,6 +19,7 @@ interface ProjectSidebarProps {
   projectId: string;
   projectName?: string;
   projectStatus?: string;
+  hasVideos?: boolean;
   className?: string;
 }
 
@@ -36,10 +37,12 @@ export function ProjectSidebar({
   projectId,
   projectName,
   projectStatus,
+  hasVideos,
   className,
 }: ProjectSidebarProps) {
   const pathname = usePathname();
   const { data: costs } = useProjectCosts(projectId);
+  const videosRequired = hasVideos === false;
 
   return (
     <aside
@@ -73,6 +76,21 @@ export function ProjectSidebar({
           const href = `/project/${projectId}/${item.href}`;
           const isActive = pathname === href;
           const Icon = item.icon;
+          // Lock all pages except Upload until videos are uploaded
+          const isLocked = videosRequired && item.href !== "upload";
+
+          if (isLocked) {
+            return (
+              <div
+                key={item.href}
+                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground/40 cursor-not-allowed"
+                title="Upload a video first"
+              >
+                <Icon className="size-4" />
+                {item.label}
+              </div>
+            );
+          }
 
           return (
             <Link

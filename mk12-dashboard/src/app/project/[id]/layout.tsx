@@ -53,6 +53,7 @@ export default function ProjectLayout({
           projectId={id}
           projectName={project?.name}
           projectStatus={project?.status}
+          hasVideos={(project?.videoPaths?.length ?? 0) > 0}
         />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
